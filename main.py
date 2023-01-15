@@ -1,4 +1,3 @@
-# idle animation
 # gravity
 # left and right wall collision
 # ground collision
@@ -16,7 +15,6 @@ WIDTH = 1280
 HEIGHT = 720
 framesR = 0
 framesL = 0
-direction = "right"
 movement_y = 0
 movement = 0
 
@@ -56,9 +54,9 @@ def on_key_up(key):
     global framesL, framesR
     # Idle animation detection 
     if key == keys.LEFT:
-        framesL = 0
+        idle_animation()
     if key == keys.RIGHT:
-        framesR = 0
+        idle_animation()
 
 def velocity():
     pass
@@ -90,7 +88,7 @@ def running_right_animation():
 # Aniamtion for running left
 def running_left_animation():
     global framesL, direction
-    framesL += 6
+    framesL += 5
     if framesL >= 1 and framesL < 15:
         knight.image = "running/running_l1"
     elif framesL >= 20 and framesL < 30:
@@ -139,10 +137,6 @@ def update():
                 movement = 0
         '''
         knight.x += movement
-
-    if framesR == 0 and framesL == 0:
-        idle_animation()
-
 
     if not(knight.colliderect(floor)):
         knight.y += 5
