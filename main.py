@@ -1,9 +1,9 @@
 # left and right wall collision
-# ground collision
 # player camera
 # background image
-# jump animation
-# gravity ground animation to fix character going into ground
+# jump and jump animation
+# shorten animation left and right code
+# jump detect collision with max height
 
 
 # Importing modules
@@ -19,15 +19,18 @@ HEIGHT = 720
 current_level = "tutorial"
 framesR = 0
 framesL = 0
-idle_state = True
 falling_time = 0
 jumped = False
 direction = "right"
 bad_landing_time = 0
 stunned_wait_time = 0
+jumping_time = 0
+max_jump_height = 0
+jump_time = 0
 
 MAX_MOVEMENT = 6
 MAX_GRAVITY = 9
+MAX_JUMP = 10
 STUNNED = False
 
 # Background
@@ -65,11 +68,6 @@ def character_gravity():
     else:
         return 0
 
-
-def character_collision():
-    pass
-
-
 def on_key_up(key):
     global framesL, framesR, STUNNED
     # Idle animation detection
@@ -80,12 +78,26 @@ def on_key_up(key):
         if key == keys.RIGHT:
             idle_animation()
 
-
-"""
 def jump():
-    global movement_y
+    global MAX_JUMP, max_jump_height, jump_time
+    jump_time += 1
+    if jump_time == 1:
+        max_jump_height = knight.y - 100
+    if knight.y >= max_jump_height - 90: # 75 50 25, 90 45 15
+        velocity_y = MAX_JUMP
+    elif knight.y >= max_jump_height - 45:
+        velocity_y = MAX_JUMP / 2
+    elif knight.y >= max_jump_height - 15:
+        velocity_y = MAX_JUMP / 3
+    else:
+        velocity_y = 0
+        jump_time = 0
+        jumped = False
+        print (jumped)
+    knight.y -= velocity_y
+    
     pass
-"""
+    
 
 
 def on_key_down(key):
@@ -101,10 +113,9 @@ def on_key_down(key):
 
         if key == keys.Z:
             knight.y -= 0
-            # jumped = True
-            """
+            jumped = True
             jump()
-            """
+            jump_animation()
 
         if key == keys.F:
             screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
@@ -116,6 +127,9 @@ def on_key_down(key):
         if key == keys.X:
             pass
 
+
+def jump_animation():
+    pass
 
 # Animation for running right
 def running_right_animation():
@@ -196,8 +210,11 @@ def landing_animation(bad_landing):
 
 # Function to update the game
 def update():
-    global direction, MAX_MOVEMENT, falling_time, STUNNED, stunned_wait_time
-
+    global direction, MAX_MOVEMENT, falling_time, STUNNED, stunned_wait_time, jump_time
+    
+    if jump_time >= 1:
+        jump()
+        
     if STUNNED:
         if abs(time.time()) >= stunned_wait_time + 1:
             STUNNED = False
