@@ -1,3 +1,4 @@
+# landing stun
 # left and right wall collision
 # ground collision
 # player camera
@@ -24,6 +25,7 @@ falling_time = 0
 jumped = False
 direction = "right"
 bad_landing_time = 0
+current_time = 0
 
 MAX_MOVEMENT = 6
 MAX_GRAVITY = 9
@@ -95,7 +97,7 @@ def on_key_down(key):
         
         if key == keys.Z:
             knight.y -= 0
-            jumped = True
+            #jumped = True
             '''
             jump()
             '''
@@ -164,7 +166,7 @@ def fall_animation():
 
 # bad landing = When the character hits the ground at a greater velocity, the character wont be able to move for a short duration
 def landing_animation(bad_landing):
-    global direction, bad_landing_time, STUNNED
+    global direction, bad_landing_time, STUNNED, current_time
     temp = ""
     if direction == "left":
         temp = "l"
@@ -174,21 +176,28 @@ def landing_animation(bad_landing):
     bad_landing_time += 1
         
     if bad_landing_time >= 1 and bad_landing_time <= 10:
-            knight.image = f"jumping/landing_{temp}1"
-    elif bad_landing_time > 10 and bad_landing_time <= 20 and bad_landing:
+        knight.image = f"jumping/landing_{temp}1"
+    elif bad_landing:
+        if bad_landing_time > 10 and bad_landing_time <= 20:
             knight.image = f"jumping/landing_{temp}2"
-    elif bad_landing_time > 20 and bad_landing_time <= 30 and bad_landing:
+        elif bad_landing_time > 20 and bad_landing_time <= 30:
             knight.image = f"jumping/landing_{temp}3"
     else:
+        if bad_landing:
+            STUNNED = True
+            current_time = abs(time.time())
         falling_time = 0
     
     
 
 # Function to update the game
 def update():
-    global direction, MAX_MOVEMENT, falling_time, STUNNED
+    global direction, MAX_MOVEMENT, falling_time, STUNNED, current_time
 
-
+    if STUNNED:
+        if current_time == (abs(time.time) + 2):
+            STUNNED = False
+        
     # Character Movement
     if not(STUNNED):
         if keyboard.left:
