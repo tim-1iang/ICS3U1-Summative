@@ -9,20 +9,26 @@
 
 # Importing modules
 import pgzrun
+import time
 
 # Declaring the screen sizes
 WIDTH = 1280
 HEIGHT = 720
-framesR = 0
-framesL = 0
-movement_y = 0
-movement = 0
-
-MAX_MOVEMENT = 6
-MAX_GRAVITY = 9
 
 # Declaration of variables and constants
 current_level = "tutorial"
+framesR = 0
+framesL = 0
+falling_frames = 0
+idle_state = True
+falling_time = 0
+jumped = False
+direction = "right"
+
+MAX_MOVEMENT = 6
+MAX_GRAVITY = 9
+GRAVITY_POWER_TIME = 2
+
 
 # Background
 floor = Rect(0, 660, 3840, 720)
@@ -45,7 +51,24 @@ def draw():
     screen.draw.filled_rect(wall2, (106, 117, 141))
 
 def character_gravity():
-    pass
+    global falling_time
+    falling_time += 1
+    if falling_time > 0 and falling_time <= 10:
+        return (MAX_GRAVITY * 0.3)
+    elif falling_time > 10 and falling_time <= 20:
+        return (MAX_GRAVITY * 0.6)
+    elif falling_time > 20 and falling_time <= 30:
+        return (MAX_GRAVITY * 0.9)
+    elif falling_time > 30:
+        return MAX_GRAVITY
+    else:
+        return 0
+
+# When the character hits the ground at a greater velocity, the character won't be able to move for the duration of GRAVITY_POWER_TIME
+def gravity_power():
+    global GRAVITY_POWER_TIME
+    time.sleep(GRAVITY_POWER_TIME)
+    
 
 def character_collision():
     pass
@@ -57,47 +80,50 @@ def on_key_up(key):
         idle_animation()
     if key == keys.RIGHT:
         idle_animation()
-
-def velocity():
-    pass
+    
 '''
 def jump():
     global movement_y
     pass
-
+'''
 
 def on_key_down(key):
+    global direction
+    if key == keys.LEFT:
+        direction = "left"
+    if key == keys.RIGHT:
+        direction = "right"
+    '''
     if key == keys.X:
         jump()
-'''
+    '''
+
 
 # Animation for running right
 def running_right_animation():
-    global framesR, direction
-    framesR += 5
-    if framesR >= 1 and framesR < 15:
+    global framesR
+    framesR += 1
+    if framesR >= 1 and framesR < 3:
         knight.image = "running/running_r1"
-    elif framesR >= 20 and framesR < 30:
+    elif framesR >= 3 and framesR < 6:
         knight.image = "running/running_r2"
-    elif framesR >= 40 and framesR < 45:
+    elif framesR >= 6 and framesR < 9:
         knight.image = "running/running_r3"
-    elif framesR >= 60:
+    elif framesR >= 12:
         framesR = 1
-    direction = "right"
 
 # Aniamtion for running left
 def running_left_animation():
-    global framesL, direction
-    framesL += 5
-    if framesL >= 1 and framesL < 15:
+    global framesL
+    framesL += 1
+    if framesL >= 1 and framesL < 3:
         knight.image = "running/running_l1"
-    elif framesL >= 20 and framesL < 30:
+    elif framesL >= 3 and framesL < 6:
         knight.image = "running/running_l2"
-    elif framesL >= 40 and framesL < 45:
+    elif framesL >= 6 and framesL < 9:
         knight.image = "running/running_l3"
-    elif framesL >= 60:
+    elif framesL >= 12:
         framesL = 1
-    direction = "left"
 
 def idle_animation():
     global direction
@@ -106,47 +132,53 @@ def idle_animation():
     elif direction == "right":
         knight.image = "idle/idle_r1"
 
+
+def fall_animation():
+    global falling_time, direction
+    temp = ""
+    if direction == "left":
+        temp = "l"
+    elif direction == "right":
+        temp = "r"
+    if falling_time > 0 and falling_time <= 10:
+        knight.image = f"jumping/falling_{temp}1"
+    elif falling_time > 10 and falling_time <= 20:
+        knight.image = f"jumping/falling_{temp}2"
+    elif falling_time > 20 and falling_time <= 30:
+        knight.image = f"jumping/falling_{temp}3"
+
+
 # Function to update the game
 def update():
-    global framesL, framesR, direction, movement
+    global direction, MAX_MOVEMENT, falling_time
+
 
     # Character Movement
-
     if keyboard.left:
+        direction = "left"
         running_left_animation()
-        '''
-        for i in wall:
-            if knight.colliderect(i) and direction == "left":
-                continue
-            elif i == wall[-1]:
-                movement = -(MAX_MOVEMENT)
-            else:
-                movement = 0
-        '''
-        knight.x += movement
+        knight.x -= MAX_MOVEMENT
 
     if keyboard.right:
+        direction = "right"
         running_right_animation()
-        '''
-        for i in wall:
-            if knight.colliderect(i) and direction == "right":
-                continue
-            elif i == wall[-1]:
-                movement = MAX_MOVEMENT
-            else:
-                movement = 0
-        '''
-        knight.x += movement
+        knight.x += MAX_MOVEMENT
 
-    if not(knight.colliderect(floor)):
-        knight.y += 5
 
     # Collision
-
+    # Gravity / Ground Collision
+    if not(knight.colliderect(floor))and not(jumped):
+        knight.y += character_gravity()
+        fall_animation()
+    elif knight.colliderect(floor) and falling_time > 30:
+        gravity_power()
+        falling_time = 0
+    else:
+        falling_time = 0
+        
 
 
 # Background Music
-
 if current_level == "tutorial":
     music.play_once("tutorialmp")
 
