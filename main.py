@@ -8,11 +8,12 @@
 
 # Importing modules
 import pgzrun
-import time
+from pgzhelper import *
 
 # Declaring the screen sizes
 WIDTH = 1280
 HEIGHT = 720
+
 
 # Declaration of variables and constants
 current_level = "tutorial"
@@ -26,6 +27,7 @@ bad_landing_time = 0
 
 MAX_MOVEMENT = 6
 MAX_GRAVITY = 9
+STUNNED = False
 
 # Background
 floor = Rect(0, 660, 3840, 720)
@@ -65,12 +67,14 @@ def character_collision():
     pass
 
 def on_key_up(key):
-    global framesL, framesR
+    global framesL, framesR, STUNNED
     # Idle animation detection 
-    if key == keys.LEFT:
-        idle_animation()
-    if key == keys.RIGHT:
-        idle_animation()
+    if not(STUNNED):
+    
+        if key == keys.LEFT:
+            idle_animation()
+        if key == keys.RIGHT:
+            idle_animation()
     
 '''
 def jump():
@@ -79,21 +83,33 @@ def jump():
 '''
 
 def on_key_down(key):
-    global direction, jumped
-    if key == keys.LEFT:
-        direction = "left"
-    if key == keys.RIGHT:
-        direction = "right"
+    global direction, jumped, STUNNED
     
-    if key == keys.Z:
-        knight.y -= 0
-        jumped = True
-        jump()
-    
-    # Attack
-    if key == keys.X:
-        pass
-    
+    if not (STUNNED):
+        
+        if key == keys.LEFT:
+            direction = "left"
+            
+        if key == keys.RIGHT:
+            direction = "right"
+        
+        if key == keys.Z:
+            knight.y -= 0
+            jumped = True
+            '''
+            jump()
+            '''
+            
+        if key == keys.F:
+            screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+        
+        if key == keys.ESCAPE:
+            exit()
+
+        # Attack
+        if key == keys.X:
+            pass
+        
 
 
 # Animation for running right
@@ -148,7 +164,7 @@ def fall_animation():
 
 # bad landing = When the character hits the ground at a greater velocity, the character wont be able to move for a short duration
 def landing_animation(bad_landing):
-    global direction, bad_landing_time
+    global direction, bad_landing_time, STUNNED
     temp = ""
     if direction == "left":
         temp = "l"
@@ -170,19 +186,20 @@ def landing_animation(bad_landing):
 
 # Function to update the game
 def update():
-    global direction, MAX_MOVEMENT, falling_time
+    global direction, MAX_MOVEMENT, falling_time, STUNNED
 
 
     # Character Movement
-    if keyboard.left:
-        direction = "left"
-        running_left_animation()
-        knight.x -= MAX_MOVEMENT
+    if not(STUNNED):
+        if keyboard.left:
+            direction = "left"
+            running_left_animation()
+            knight.x -= MAX_MOVEMENT
 
-    if keyboard.right:
-        direction = "right"
-        running_right_animation()
-        knight.x += MAX_MOVEMENT
+        if keyboard.right:
+            direction = "right"
+            running_right_animation()
+            knight.x += MAX_MOVEMENT
 
 
     # Collision
