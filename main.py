@@ -1,4 +1,3 @@
-# gravity
 # left and right wall collision
 # ground collision
 # player camera
@@ -19,16 +18,14 @@ HEIGHT = 720
 current_level = "tutorial"
 framesR = 0
 framesL = 0
-falling_frames = 0
 idle_state = True
 falling_time = 0
 jumped = False
 direction = "right"
+bad_landing_time = 0
 
 MAX_MOVEMENT = 6
 MAX_GRAVITY = 9
-GRAVITY_POWER_TIME = 2
-
 
 # Background
 floor = Rect(0, 660, 3840, 720)
@@ -38,7 +35,7 @@ ground = [floor]
 wall = [wall1]
 
 # Entities
-knight = Actor("idle/idle_r1")
+knight = Actor("idle/idle_r1", anchor=("center", "bottom"))
 
 
 # Function to draw into the game
@@ -62,13 +59,7 @@ def character_gravity():
     elif falling_time > 30:
         return MAX_GRAVITY
     else:
-        return 0
-
-# When the character hits the ground at a greater velocity, the character won't be able to move for the duration of GRAVITY_POWER_TIME
-def gravity_power():
-    global GRAVITY_POWER_TIME
-    time.sleep(GRAVITY_POWER_TIME)
-    
+        return 0    
 
 def character_collision():
     pass
@@ -88,15 +79,21 @@ def jump():
 '''
 
 def on_key_down(key):
-    global direction
+    global direction, jumped
     if key == keys.LEFT:
         direction = "left"
     if key == keys.RIGHT:
         direction = "right"
-    '''
-    if key == keys.X:
+    
+    if key == keys.Z:
+        knight.y -= 0
+        jumped = True
         jump()
-    '''
+    
+    # Attack
+    if key == keys.X:
+        pass
+    
 
 
 # Animation for running right
@@ -140,6 +137,7 @@ def fall_animation():
         temp = "l"
     elif direction == "right":
         temp = "r"
+        
     if falling_time > 0 and falling_time <= 10:
         knight.image = f"jumping/falling_{temp}1"
     elif falling_time > 10 and falling_time <= 20:
@@ -147,6 +145,28 @@ def fall_animation():
     elif falling_time > 20 and falling_time <= 30:
         knight.image = f"jumping/falling_{temp}3"
 
+
+# bad landing = When the character hits the ground at a greater velocity, the character wont be able to move for a short duration
+def landing_animation(bad_landing):
+    global direction, bad_landing_time
+    temp = ""
+    if direction == "left":
+        temp = "l"
+    elif direction == "right":
+        temp = "r"
+        
+    bad_landing_time += 1
+        
+    if bad_landing_time >= 1 and bad_landing_time <= 10:
+            knight.image = f"jumping/landing_{temp}1"
+    elif bad_landing_time > 10 and bad_landing_time <= 20 and bad_landing:
+            knight.image = f"jumping/landing_{temp}2"
+    elif bad_landing_time > 20 and bad_landing_time <= 30 and bad_landing:
+            knight.image = f"jumping/landing_{temp}3"
+    else:
+        falling_time = 0
+    
+    
 
 # Function to update the game
 def update():
@@ -170,11 +190,14 @@ def update():
     if not(knight.colliderect(floor))and not(jumped):
         knight.y += character_gravity()
         fall_animation()
-    elif knight.colliderect(floor) and falling_time > 30:
-        gravity_power()
-        falling_time = 0
+    elif knight.colliderect(floor):
+        if falling_time > 0 and falling_time <= 30:
+            landing_animation(False)
+        elif falling_time > 30:
+            landing_animation(True)
     else:
         falling_time = 0
+        
         
 
 
