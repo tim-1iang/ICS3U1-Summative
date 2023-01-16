@@ -4,6 +4,7 @@
 # jump and jump animation
 # shorten animation left and right code
 # jump detect collision with max height
+# differing jump heights depending on key hold
 
 
 # Importing modules
@@ -27,9 +28,11 @@ stunned_wait_time = 0
 jumping_time = 0
 max_jump_height = 0
 jump_time = 0
+initial_height = 0
+velocity_y = 0
 
 MAX_MOVEMENT = 6
-MAX_GRAVITY = 9
+MAX_GRAVITY = 9.8
 MAX_JUMP = 10
 STUNNED = False
 
@@ -64,6 +67,7 @@ def character_gravity():
     elif falling_time > 20 and falling_time <= 30:
         return MAX_GRAVITY * 0.9
     elif falling_time > 30:
+        print (falling_time)
         return MAX_GRAVITY
     else:
         return 0
@@ -79,25 +83,24 @@ def on_key_up(key):
             idle_animation()
 
 def jump():
-    global MAX_JUMP, max_jump_height, jump_time
+    global MAX_JUMP, max_jump_height, jump_time, initial_height, jumped
     jump_time += 1
     if jump_time == 1:
-        max_jump_height = knight.y - 100
-    if knight.y >= max_jump_height - 90: # 75 50 25, 90 45 15
+        initial_height = knight.y
+        max_jump_height = knight.y - 150
+        
+    if knight.y <= initial_height and knight.y >= max_jump_height + 90: # 75 50 25, 90 45 15
         velocity_y = MAX_JUMP
-    elif knight.y >= max_jump_height - 45:
+    elif initial_height - 90 <= knight.y and knight.y >= max_jump_height + 45:
         velocity_y = MAX_JUMP / 2
-    elif knight.y >= max_jump_height - 15:
+    elif initial_height - 135 <= knight.y and knight.y >= max_jump_height + 15:
         velocity_y = MAX_JUMP / 3
-    else:
+    elif knight.y >= max_jump_height:
         velocity_y = 0
         jump_time = 0
         jumped = False
-        print (jumped)
     knight.y -= velocity_y
-    
-    pass
-    
+
 
 
 def on_key_down(key):
@@ -112,7 +115,6 @@ def on_key_down(key):
             direction = "right"
 
         if key == keys.Z:
-            knight.y -= 0
             jumped = True
             jump()
             jump_animation()
@@ -211,7 +213,6 @@ def landing_animation(bad_landing):
 # Function to update the game
 def update():
     global direction, MAX_MOVEMENT, falling_time, STUNNED, stunned_wait_time, jump_time
-    
     if jump_time >= 1:
         jump()
         
@@ -230,10 +231,10 @@ def update():
             direction = "right"
             running_right_animation()
             knight.x += MAX_MOVEMENT
-
+        
     # Collision
     # Gravity / Ground Collision
-    if not (knight.colliderect(floor)) and not (jumped):
+    if not(knight.colliderect(floor)) and not(jumped):
         knight.y += character_gravity()
         fall_animation()
     elif knight.colliderect(floor):
