@@ -10,11 +10,11 @@
 # Importing modules
 import pgzrun
 from pgzhelper import *
+from random import randint
 
 # Declaring the screen sizes
 WIDTH = 1280
 HEIGHT = 720
-
 
 # Declaration of variables and constants
 current_level = "tutorial"
@@ -31,32 +31,68 @@ jump_time = 0
 initial_height = 0
 velocity_y = 0
 touched_ground = False
+stunned = False
+menu_choice = randint(0, 1)
+attacked = False
 
 MAX_MOVEMENT = 6
 MAX_GRAVITY = 9.8
-MAX_JUMP = 16
-STUNNED = False
+MAX_JUMP = 20
 HEIGHT_LIMIT = 250
 
+
+
 # Background
+tutorial = ["background/tutorial_1", "background/tutorial_2"]
+menu = ["background/menu_1", "background/menu_2"]
+background = Actor(tutorial[0], pos=(640, 360))
 floor = Rect(0, 660, 3840, 720)
 wall1 = Rect(500, 520, 520, 660)
 wall2 = Rect(200, 520, 100, 660)
 ground = [floor]
 wall = [wall1]
 
+
+# Levels
+levels = [menu, tutorial]
+
+
 # Entities
-knight = Actor("idle/idle_r1", anchor=("center", "bottom"))
+knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0))
 
 
 # Function to draw into the game
 def draw():
+    global direction
     screen.clear()
-    screen.fill((200, 200, 200))
+    
+    '''
+    # Menu
+    if current_level == menu:
+        background.draw()
+    '''
+    background.draw()
     knight.draw()
     screen.draw.filled_rect(floor, (106, 117, 141))
     screen.draw.filled_rect(wall1, (106, 117, 141))
     screen.draw.filled_rect(wall2, (106, 117, 141))
+    
+    if attacked:
+        temp = ""
+        if direction == "left":
+            temp = "l" 
+            temp_pos = knight.midleft
+            temp_pos = (temp_pos[0] - 20, temp_pos[1])
+        elif direction == "right":
+            temp = "r"
+            temp_pos = knight.midright
+            temp_pos = (temp_pos[0] + 20, temp_pos[1])
+        slash = Actor(f"attack/attack_slash_{temp}", pos=temp_pos)
+        slash.draw()
+    
+    if current_level == "tutorial":
+        pass
+        
 
 
 def character_gravity():
@@ -76,9 +112,9 @@ def character_gravity():
 
 
 def on_key_up(key):
-    global framesL, framesR, STUNNED
+    global framesL, framesR, stunned
     # Idle animation detection
-    if not (STUNNED):
+    if not (stunned):
 
         if key == keys.LEFT:
             idle_animation()
@@ -108,11 +144,14 @@ def jump():
         jumped = False
     knight.y -= velocity_y
 
+def attack():
+    global attacked
+    attacked = True
 
 def on_key_down(key):
-    global direction, jumped, STUNNED
+    global direction, jumped, stunned
 
-    if not (STUNNED):
+    if not (stunned):
 
         if key == keys.LEFT:
             direction = "left"
@@ -134,7 +173,7 @@ def on_key_down(key):
 
         # Attack
         if key == keys.X:
-            pass
+            attack()
 
 
 def jump_animation():
@@ -195,7 +234,7 @@ def fall_animation():
 
 # bad landing = When the character hits the ground at a greater velocity, the character wont be able to move for a short duration
 def landing_animation(bad_landing):
-    global direction, bad_landing_time, STUNNED, stunned_wait_time
+    global direction, bad_landing_time, stunned, stunned_wait_time
     temp = ""
     if direction == "left":
         temp = "l"
@@ -207,7 +246,7 @@ def landing_animation(bad_landing):
     if bad_landing_time >= 1 and bad_landing_time <= 10:
         knight.image = f"jumping/landing_{temp}1"
         if bad_landing:
-            STUNNED = True
+            stunned = True
             stunned_wait_time = abs(time.time())
     elif bad_landing:
         if bad_landing_time > 10 and bad_landing_time <= 20:
@@ -220,16 +259,17 @@ def landing_animation(bad_landing):
 
 # Function to update the game
 def update():
-    global direction, MAX_MOVEMENT, falling_time, STUNNED, stunned_wait_time, jump_time, touched_ground
+    global direction, MAX_MOVEMENT, falling_time, stunned, stunned_wait_time, jump_time, touched_ground
+
     if jump_time >= 1:
         jump()
 
-    if STUNNED:
+    if stunned:
         if abs(time.time()) >= stunned_wait_time + 1:
-            STUNNED = False
+            stunned = False
 
     # Character Movement
-    if not (STUNNED):
+    if not (stunned):
         if keyboard.left:
             direction = "left"
             running_left_animation()
