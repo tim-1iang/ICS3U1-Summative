@@ -306,52 +306,65 @@ def landing_animation(bad_landing):
     # the player actor's images will change depending on the bad landing frame counter range
     if bad_landing_time >= 1 and bad_landing_time <= 10:
         knight.image = f"jumping/landing_{temp}1" 
-        if bad_landing:
-            stunned = True
-            stunned_wait_time = abs(time.time()) 
+        if bad_landing: # if the player has a bad landing
+            stunned = True # stunned is set to True so the player will be stunned
+            stunned_wait_time = abs(time.time()) # the time of the stun
+    # if the player does not have a bad landing the next landing animation will not run
     elif bad_landing:
         if bad_landing_time > 10 and bad_landing_time <= 20:
             knight.image = f"jumping/landing_{temp}2"
         elif bad_landing_time > 20 and bad_landing_time < 30:
             knight.image = f"jumping/landing_{temp}3"
     else:
-        falling_time = 0
+        falling_time = 0 # once the player is done landing, the falling time will be reset to 0
 
 
-# Function to update the game
+# event handler function to update the game
+# continuously runs
 def update():
-    global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time
-    global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME
-
-    if not(attacked) and not(jumped):
+    global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time # global variables
+    global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
+    
+    # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
+    if not(attacked) and not(jumped) and not(falling_time > 30):
         idle_animation()
 
+    # when the player attack has a cooldown
     if attack_cooldown:
-        cooldown_time += 1
-        if cooldown_time >= ATTACK_COOLDOWN_TIME:
-            cooldown_time = 0
-            attack_cooldown = False
+        cooldown_time += 1 # add one to the cooldown timer
+        if cooldown_time >= ATTACK_COOLDOWN_TIME: # if the cooldown timer is equal to or bigger than the set attack cooldown time
+            cooldown_time = 0 # reset the cooldown timer to 0
+            attack_cooldown = False # put attacking off cooldown
 
+    # when the user attacks
     if attacked:
-        attack_time += 1
-        attack_animation()
-        if attack_time >= 5:
-            attack_time = 0
-            attacked = False
-            attack_cooldown = True
-
+        attack_time += 1 # timer for the time the player has been attacking for
+        attack_animation() # calls the attack_animation function to animate the player while attacking
+        if attack_time >= 5: # once the attack time counter is greater or equal to 5
+            attack_time = 0 # the timer is reset to 0
+            attacked = False # the player will not be "attacking"
+            attack_cooldown = True # puts the player attacking on cooldown
+    
+    # if the jump time is greater than one, then that means the player jumped and is in the air
+    # continuously call the jump function and animation
     if jump_time >= 1:
-        jump()
-        jump_animation()
-
+        jump() 
+        jump_animation() 
+    
+    # when the player is stunned
     if stunned:
-        if abs(time.time()) >= stunned_wait_time + 1:
-            stunned = False
+        if abs(time.time()) >= stunned_wait_time + 1: # if one or more seconds passed after the time of the stun
+            stunned = False # the player won't be stunned anymore
 
     # Character Movement
+    # if the player is not stunned, to prevent moving when they are stunned
     if not (stunned):
+        # when the player holds the left or right key
+        # the direction is changed corresponding to the direction they are facing
+        # the running_animation function is called to animate the player running
+        # the player will move either left or right depending on which direction
         if keyboard.left:
-            direction = "left"
+            direction = "left" 
             running_animation()
             knight.x -= MAX_MOVEMENT
 
@@ -360,8 +373,17 @@ def update():
             running_animation()
             knight.x += MAX_MOVEMENT
 
+
     # Collision
     # Gravity / Ground Collision
+    # when the player is not touching/colliding with the floor and not jumping, gravity is applied to the player
+    #   the player will move depending on the return value of the function character_gravity
+    #   the fall_animation function is called to animate the player falling
+    # if the player is touching the floor
+    # touched_ground will be set to True meaning the player has touched the ground
+    # if the falling_time was bigger than 30 then the player will have a "bad landing"
+    # the function landing_animation will have a parameter passed through depending on if it was a bad landing or not
+    # if 
     if not (knight.colliderect(floor)) and not (jumped):
         knight.y += character_gravity()
         fall_animation()
@@ -371,9 +393,7 @@ def update():
             landing_animation(False)
         elif falling_time > 30:
             landing_animation(True)
-    else:
-        falling_time = 0
-
+            
 
 # Background Music
 # will play different music depending on the level
