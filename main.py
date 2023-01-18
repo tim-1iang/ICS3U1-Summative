@@ -56,27 +56,28 @@ knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0))
 
 # Function to draw into the game
 def draw():
-        
+
     global attack_frame, attacked, current_level, attack_time
     screen.clear()
-    
+
     background.draw()
     knight.draw()
     screen.draw.filled_rect(floor, (106, 117, 141))
     screen.draw.filled_rect(wall1, (106, 117, 141))
     screen.draw.filled_rect(wall2, (106, 117, 141))
 
-    if attacked:
+    if attacked and attack_time >= 1:
         slash.draw()
-        if current_level == "tutorial" and attack_time >= 30:
+        print (attack_time)
+        if current_level == "tutorial" and attack_time == 10:
             screen.clear()
             background.draw()
             knight.draw()
             screen.draw.filled_rect(floor, (106, 117, 141))
             screen.draw.filled_rect(wall1, (106, 117, 141))
             screen.draw.filled_rect(wall2, (106, 117, 141))
-            attack_time = 0
-        
+            
+
 
 def character_gravity():
     global falling_time
@@ -136,7 +137,7 @@ def attack():
         slash.image = "attack/attack_slash_r"
         slash.pos = (knight.midleft[0] + 20, knight.midleft[1])
     attacked = True
-    
+
 def on_key_down(key):
     global direction, jumped, stunned
 
@@ -152,7 +153,7 @@ def on_key_down(key):
             if touched_ground:
                 jumped = True
                 jump()
-                
+
 
         if key == keys.F:
             screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
@@ -171,24 +172,24 @@ def jump_animation():
         temp = "l"
     elif direction == "right":
         temp = "r"
-        
+
     if jump_time >= 0 and jump_time < 5:
         knight.image = f"jumping/jumping_{temp}1"
     elif  jump_time >= 5 and jump_time < 20:
         knight.image = f"jumping/jumping_{temp}2"
-        
+
 
 
 def attack_animation():
     global attack_frame, direction, attacked
     attack_frame += 1
-    
+
     temp = ""
     if direction == "left":
         temp = "l"
     elif direction == "right":
         temp = "r"
-        
+
     if attack_frame >= 0 and attack_frame < 5:
         knight.image = f"attack/attack_{temp}1"
     elif attack_frame >= 5 and attack_frame < 10:
@@ -202,8 +203,8 @@ def attack_animation():
     elif attack_frame >= 25:
         attack_frame = 0
         attacked = False
-    
-    
+
+
 # Animation for running right
 def running_right_animation():
     global framesR
@@ -284,14 +285,17 @@ def landing_animation(bad_landing):
 # Function to update the game
 def update():
     global direction, MAX_MOVEMENT, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time
-    
+
     if not(attacked) and not(jumped):
         idle_animation()
-    
+
     if attacked:
         attack_time += 1
         attack_animation()
-    
+        if attack_time >= 5:
+            attack_time = 0
+            attacked = False
+
     if jump_time >= 1:
         jump()
         jump_animation()
