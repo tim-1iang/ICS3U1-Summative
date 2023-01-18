@@ -6,6 +6,7 @@
 # jump detect collision with max height
 # differing jump heights depending on key hold
 # attack cooldown
+# list for order of drawing in each level
 
 
 # Importing modules
@@ -17,74 +18,76 @@ WIDTH = 1280
 HEIGHT = 720
 
 # Declaration of variables and constants
-current_level = "tutorial"
-framesR = 0
-framesL = 0
-falling_time = 0
-jumped = False
-direction = "right"
-bad_landing_time = 0
-stunned_wait_time = 0
-max_jump_height = 0
-jump_time = 0
-initial_height = 0
-velocity_y = 0
-touched_ground = False
-stunned = False
-attacked = False
-attack_frame = 0
-attack_time = 0
-attack_cooldown = 0
-cooldown_time = 0
+current_level = "tutorial" # the current level the player is in
+frames_running = 0 # the frames for the player running animation
+falling_time = 0 # the time the player falls for
+jumped = False # if the player jumped or not
+direction = "right" # what direction the player is facing
+bad_landing_time = 0 # counter for how long the landing animation is
+stunned_wait_time = 0 # how long the player has to wait before they are not stunned
+max_jump_height = 0 # the maxiumum height the player can jump depending on their current height
+jump_time = 0 # how long the player will jump for
+initial_height = 0 # the pos of the player
+velocity_y = 0 # the vertical velocity the player will move in when jumping
+touched_ground = False # if the player touched the ground or not
+stunned = False # if the player is going to be stunned
+attacked = False # if the player has attacked
+attack_frame = 0 # the attack animation frames
+attack_time = 0 # the time the player attacks for
+attack_cooldown = False # if the player has attacked and will the next attack need a cooldown period
+cooldown_time = 0 # the cooldown period counter for attacks
 
-MAX_MOVEMENT = 6
-MAX_GRAVITY = 9.8
-MAX_JUMP = 20
-HEIGHT_LIMIT = 250
-ATTACK_COOLDOWN_TIME = 20
-
+MAX_MOVEMENT = 6 # The maximum speed the player can move horizontally
+MAX_GRAVITY = 9.8 # The maximum speed the player will fall at
+MAX_JUMP = 20 # The maximum speed the player can jump at
+HEIGHT_LIMIT = 250 # the height which the player cannot jump past
+ATTACK_COOLDOWN_TIME = 20 # the time it takes before attacking again
 
 
 # Background
 background = Actor("background/tutorial_1", pos=(640, 360))
+# Rects for the floors and walls
 floor = Rect(0, 660, 3840, 720)
 wall1 = Rect(500, 520, 520, 660)
 wall2 = Rect(200, 520, 100, 660)
-ground = [floor]
-wall = [wall1]
+
 
 # Entities
-slash = Actor("attack/attack_slash_r", pos=(-50, -50))
-knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0))
+slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attack slash
+knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor
 
 
 # Function to draw into the game
 def draw():
 
-    global attack_frame, attacked, current_level, attack_time
-    screen.clear()
+    global attack_frame, attacked, current_level, attack_time # global variables
+    screen.clear() # clear the screen
 
-    background.draw()
-    knight.draw()
-    screen.draw.filled_rect(floor, (106, 117, 141))
+    background.draw() # draw the background actor
+    knight.draw() # draw the player
+    # draw the floor and wall rects
+    screen.draw.filled_rect(floor, (106, 117, 141)) 
     screen.draw.filled_rect(wall1, (106, 117, 141))
     screen.draw.filled_rect(wall2, (106, 117, 141))
 
-    if attacked and attack_time >= 1:
-        slash.draw()
-        if current_level == "tutorial" and attack_time == 10:
+    if attacked and attack_time >= 1: # when the player attacked and the time they attacked for is greater or equal to 1
+        slash.draw() # draw the attack slash
+        if current_level == "tutorial" and attack_time == 10: # when the current_level is "tutorial" and the time they attacked for is 10
+        # redraw the entire screen without the attack slash
             screen.clear()
             background.draw()
             knight.draw()
             screen.draw.filled_rect(floor, (106, 117, 141))
             screen.draw.filled_rect(wall1, (106, 117, 141))
             screen.draw.filled_rect(wall2, (106, 117, 141))
-            
 
 
+# function to calculate the player gravity speed
 def character_gravity():
-    global falling_time
-    falling_time += 1
+    global falling_time # global variables
+    falling_time += 1 # increase falling_time everytime the function is ran
+    # checks to see how long the player has been falling for
+    # their falling speed will increase or decrease depending on how long it takes for the player to fall and touch the ground and is returned when the function is called
     if falling_time > 0 and falling_time <= 10:
         return MAX_GRAVITY * 0.3
     elif falling_time > 10 and falling_time <= 20:
@@ -97,102 +100,124 @@ def character_gravity():
         return 0
 
 
+# event handler function to check when the player lets go of a key, parameter key takes input of which key the user lifts up
 def on_key_up(key):
-    global framesL, framesR, stunned
+    global stunned # global variables
+    
     # Idle animation detection
-    if not (stunned):
-
+    # checks if the player is stunned
+    # then checks if the key they let go of is either left or right
+    # if it is then the idle_animation function is called to change the animation state
+    if not (stunned): 
         if key == keys.LEFT:
             idle_animation()
         if key == keys.RIGHT:
             idle_animation()
 
 
+# Function for the player jumping
 def jump():
-    global MAX_JUMP, max_jump_height, jump_time, initial_height, jumped, HEIGHT_LIMIT, touched_ground
-    jump_time += 1
-    if jump_time == 1:
-        touched_ground = False
-        initial_height = knight.y
-        max_jump_height = knight.y - HEIGHT_LIMIT
+    global MAX_JUMP, max_jump_height, jump_time, initial_height, jumped, HEIGHT_LIMIT, touched_ground # global variables
+    jump_time += 1 # increase jump_time by one each time the function is called
+    if jump_time == 1: # on the first call when jump_time is one
+        touched_ground = False # the player is not touching the ground anymore
+        initial_height = knight.y # the current height of the player is the initial height
+        max_jump_height = knight.y - HEIGHT_LIMIT # the max height the player can jump is the value of height limit added above the player
 
-    if (
-        knight.y <= initial_height and knight.y >= max_jump_height + (HEIGHT_LIMIT * 0.6)
-    ):  # 75 50 25, 90 45 15
+    # checks if the player is between a certain height range based off the initial height and max jump height
+    # depending on which height range they are in, the jump speed they will move at will change
+    # the lower they are to where they started, the faster they are and vice versa
+    if (knight.y <= initial_height and knight.y >= max_jump_height + (HEIGHT_LIMIT * 0.6)):
         velocity_y = MAX_JUMP
     elif initial_height - (HEIGHT_LIMIT * 0.6) <= knight.y and knight.y >= max_jump_height + (HEIGHT_LIMIT * 0.3):
         velocity_y = MAX_JUMP / 2
     elif initial_height - (HEIGHT_LIMIT * 0.9) <= knight.y and knight.y >= max_jump_height + (HEIGHT_LIMIT * 0.1):
         velocity_y = MAX_JUMP / 3
-    elif knight.y >= max_jump_height:
-        velocity_y = 0
-        jump_time = 0
-        jumped = False
-    knight.y -= velocity_y
+    elif knight.y >= max_jump_height: # when the player reaches the maximum height
+        velocity_y = 0 # the jump velocity is set to 0
+        jump_time = 0 # the time for the player to jump is resetted
+        jumped = False # jumped is set to False so the player cannot jump until they touched the ground
+        
+    knight.y -= velocity_y # the player moves up depending on the jump speed everytime the function is called
 
+
+# function for the player attacking
 def attack():
-    global attacked, direction
-    if direction == "left":
-        slash.image = "attack/attack_slash_l"
-        slash.pos = (knight.midleft[0] - 20, knight.midleft[1])
-    elif direction == "right":
-        temp_pos = knight.midright
-        slash.image = "attack/attack_slash_r"
-        slash.pos = (knight.midright[0] + 20, knight.midright[1])
-    attacked = True
+    global attacked, direction # global variables
+    
+    if direction == "left": # if the player is facing left
+        slash.image = "attack/attack_slash_l" # change the slash image to a left slash
+        slash.pos = (knight.midleft[0] - 20, knight.midleft[1]) # the position of the attack slash is the same pos of the players midleft but to the left by 20 pixels
+    elif direction == "right": # if the player is facing right
+        slash.image = "attack/attack_slash_r" # change the slash image to a right slash
+        slash.pos = (knight.midright[0] + 20, knight.midright[1]) # the position of the attack slash is the same pos of the players midright but to the right by 20 pixels
+    attacked = True # set attacked to True meaning the player has attacked which will set off a cooldown
 
+
+# event handler function for when a key is pressed down, parameter key is used to take input of which key the user pressed down
 def on_key_down(key):
-    global direction, jumped, stunned
-
-    if not (stunned):
-
+    global direction, jumped, stunned # global variables
+    
+    # checks individual keys
+    if not (stunned): # if the player is not stunned, so the player cant move when they are stunned
+        
+        # left and right keys which changes the direction variable
         if key == keys.LEFT:
             direction = "left"
 
         if key == keys.RIGHT:
             direction = "right"
 
+        # Z key for jumping
         if key == keys.Z:
-            if touched_ground:
-                jumped = True
-                jump()
+            if touched_ground: # checks if the user has touched the ground before jumping
+                jumped = True # change jumped to True meaning the user has jumped
+                jump() # call the jump function
 
-
-        if key == keys.F:
-            screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN, attack_cooldown)
-
+        # F key for putting the window in fullscreen
+        if key == keys.F: 
+            screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+    
+        # Escape key to exit the game
         if key == keys.ESCAPE:
             exit()
 
-        # Attack
+        # X key to attack only if attacking is not on cooldown
         if key == keys.X and not(attack_cooldown):
             attack()
 
 
+# function for the jumping animation
 def jump_animation():
+    # temporary variable to change the animation more efficiently, helps with changing files depending on left or right
     temp = ""
     if direction == "left":
         temp = "l"
     elif direction == "right":
         temp = "r"
-
+    
+    # animation will change depending on how long the player has jumped for
+    # the player of the image is changed to animate it
     if jump_time >= 0 and jump_time < 5:
         knight.image = f"jumping/jumping_{temp}1"
     elif  jump_time >= 5 and jump_time < 20:
         knight.image = f"jumping/jumping_{temp}2"
 
 
-
+# function for the attacking animation
 def attack_animation():
-    global attack_frame, direction, attacked
-    attack_frame += 1
+    global attack_frame, direction, attacked # global variable
+    attack_frame += 1 # adding one to attack_frame each time the attack animation function is called
 
-    temp = ""
+    # temporary variable to change the animation more efficiently, helps with changing files depending on left or right
+    temp = "" 
     if direction == "left":
         temp = "l"
     elif direction == "right":
         temp = "r"
 
+    # animation will change depending on the frame of the attack_frame variable 
+    # the image of the player actor will be changed to animate it
     if attack_frame >= 0 and attack_frame < 5:
         knight.image = f"attack/attack_{temp}1"
     elif attack_frame >= 5 and attack_frame < 10:
@@ -203,38 +228,32 @@ def attack_animation():
         knight.image = f"attack/attack_{temp}4"
     elif attack_frame >= 20 and attack_frame < 25:
         knight.image = f"attack/attack_{temp}5"
+    # when the attack animation is done and the attack_frame is past the animation ranges
     elif attack_frame >= 25:
-        attack_frame = 0
-        attacked = False
+        attack_frame = 0 # the attack_frame counter is reset
+        attacked = False # attacked is changed to False so the user can attack again
 
 
-# Animation for running right
-def running_right_animation():
-    global framesR
-    framesR += 1
-    if framesR >= 1 and framesR < 3:
-        knight.image = "running/running_r1"
-    elif framesR >= 3 and framesR < 6:
-        knight.image = "running/running_r2"
-    elif framesR >= 6 and framesR < 9:
-        knight.image = "running/running_r3"
-    elif framesR >= 12:
-        framesR = 1
-
-
-# Aniamtion for running left
-def running_left_animation():
-    global framesL
-    framesL += 1
-    if framesL >= 1 and framesL < 3:
-        knight.image = "running/running_l1"
-    elif framesL >= 3 and framesL < 6:
-        knight.image = "running/running_l2"
-    elif framesL >= 6 and framesL < 9:
-        knight.image = "running/running_l3"
-    elif framesL >= 12:
-        framesL = 1
-
+# function for the player running animation
+def running_animation():
+    global frames_running
+    frames_running += 1
+    
+    # temporary variable to change the animation more efficiently, helps with changing files depending on left or right
+    temp = "" 
+    if direction == "left":
+        temp = "l"
+    elif direction == "right":
+        temp = "r"
+        
+    if frames_running >= 1 and frames_running < 3:
+        knight.image = f"running/running_{temp}1"
+    elif frames_running >= 3 and frames_running < 6:
+        knight.image = f"running/running_{temp}2"
+    elif frames_running >= 6 and frames_running < 9:
+        knight.image = f"running/running_{temp}3"
+    elif frames_running >= 12:
+        frames_running = 1
 
 def idle_animation():
     global direction
@@ -298,7 +317,7 @@ def update():
         if cooldown_time >= ATTACK_COOLDOWN_TIME:
             cooldown_time = 0
             attack_cooldown = False
-    
+
     if attacked:
         attack_time += 1
         attack_animation()
@@ -319,12 +338,12 @@ def update():
     if not (stunned):
         if keyboard.left:
             direction = "left"
-            running_left_animation()
+            running_animation()
             knight.x -= MAX_MOVEMENT
 
         if keyboard.right:
             direction = "right"
-            running_right_animation()
+            running_animation()
             knight.x += MAX_MOVEMENT
 
     # Collision
