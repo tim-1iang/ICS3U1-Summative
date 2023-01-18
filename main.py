@@ -1,6 +1,7 @@
+# things left to do
+#####################
 # left and right wall collision
 # player camera
-# jump and jump animation
 # shorten animation left and right code
 # jump detect collision with max height
 # differing jump heights depending on key hold
@@ -33,11 +34,14 @@ stunned = False
 attacked = False
 attack_frame = 0
 attack_time = 0
+attack_cooldown = 0
+cooldown_time = 0
 
 MAX_MOVEMENT = 6
 MAX_GRAVITY = 9.8
 MAX_JUMP = 20
 HEIGHT_LIMIT = 250
+ATTACK_COOLDOWN_TIME = 20
 
 
 
@@ -68,7 +72,6 @@ def draw():
 
     if attacked and attack_time >= 1:
         slash.draw()
-        print (attack_time)
         if current_level == "tutorial" and attack_time == 10:
             screen.clear()
             background.draw()
@@ -156,13 +159,13 @@ def on_key_down(key):
 
 
         if key == keys.F:
-            screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+            screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN, attack_cooldown)
 
         if key == keys.ESCAPE:
             exit()
 
         # Attack
-        if key == keys.X:
+        if key == keys.X and not(attack_cooldown):
             attack()
 
 
@@ -284,17 +287,25 @@ def landing_animation(bad_landing):
 
 # Function to update the game
 def update():
-    global direction, MAX_MOVEMENT, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time
+    global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time
+    global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME
 
     if not(attacked) and not(jumped):
         idle_animation()
 
+    if attack_cooldown:
+        cooldown_time += 1
+        if cooldown_time >= ATTACK_COOLDOWN_TIME:
+            cooldown_time = 0
+            attack_cooldown = False
+    
     if attacked:
         attack_time += 1
         attack_animation()
         if attack_time >= 5:
             attack_time = 0
             attacked = False
+            attack_cooldown = True
 
     if jump_time >= 1:
         jump()
