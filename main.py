@@ -10,7 +10,6 @@
 # Importing modules
 import pgzrun
 from pgzhelper import *
-from random import randint
 
 # Declaring the screen sizes
 WIDTH = 1280
@@ -32,8 +31,8 @@ initial_height = 0
 velocity_y = 0
 touched_ground = False
 stunned = False
-menu_choice = randint(0, 1)
 attacked = False
+attack_time = 0
 
 MAX_MOVEMENT = 6
 MAX_GRAVITY = 9.8
@@ -43,57 +42,41 @@ HEIGHT_LIMIT = 250
 
 
 # Background
-tutorial = ["background/tutorial_1", "background/tutorial_2"]
-menu = ["background/menu_1", "background/menu_2"]
-background = Actor(tutorial[0], pos=(640, 360))
+background = Actor("background/tutorial_1", pos=(640, 360))
 floor = Rect(0, 660, 3840, 720)
 wall1 = Rect(500, 520, 520, 660)
 wall2 = Rect(200, 520, 100, 660)
 ground = [floor]
 wall = [wall1]
 
-
-# Levels
-levels = [menu, tutorial]
-
-
 # Entities
+slash = Actor("attack/attack_slash_r", pos=(-50, -50))
 knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0))
 
 
 # Function to draw into the game
 def draw():
-    global direction
+        
+    global direction, attack_time, attacked
     screen.clear()
     
-    '''
-    # Menu
-    if current_level == menu:
-        background.draw()
-    '''
     background.draw()
     knight.draw()
     screen.draw.filled_rect(floor, (106, 117, 141))
     screen.draw.filled_rect(wall1, (106, 117, 141))
     screen.draw.filled_rect(wall2, (106, 117, 141))
-    
-    if attacked:
-        temp = ""
-        if direction == "left":
-            temp = "l" 
-            temp_pos = knight.midleft
-            temp_pos = (temp_pos[0] - 20, temp_pos[1])
-        elif direction == "right":
-            temp = "r"
-            temp_pos = knight.midright
-            temp_pos = (temp_pos[0] + 20, temp_pos[1])
-        slash = Actor(f"attack/attack_slash_{temp}", pos=temp_pos)
-        slash.draw()
-    
-    if current_level == "tutorial":
-        pass
-        
 
+    if attacked:
+        slash.draw()
+        if current_level == "tutorial" and attack_time >= 5:
+            background.draw()
+            knight.draw()
+            screen.draw.filled_rect(floor, (106, 117, 141))
+            screen.draw.filled_rect(wall1, (106, 117, 141))
+            screen.draw.filled_rect(wall2, (106, 117, 141))
+            attacked = False
+            attack_time = 0
+        
 
 def character_gravity():
     global falling_time
@@ -145,9 +128,18 @@ def jump():
     knight.y -= velocity_y
 
 def attack():
-    global attacked
+    global attacked, direction
+    temp_pos = ()
+    if direction == "left":
+        temp_pos = knight.midleft
+        slash.image = "attack/attack_slash_l"
+        slash.pos = (temp_pos[0] - 20, temp_pos[1])
+    elif direction == "right":
+        temp_pos = knight.midright
+        slash.image = "attack/attack_slash_r"
+        slash.pos = (temp_pos[0] + 20, temp_pos[1])
     attacked = True
-
+    
 def on_key_down(key):
     global direction, jumped, stunned
 
@@ -259,8 +251,11 @@ def landing_animation(bad_landing):
 
 # Function to update the game
 def update():
-    global direction, MAX_MOVEMENT, falling_time, stunned, stunned_wait_time, jump_time, touched_ground
-
+    global direction, MAX_MOVEMENT, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, attack_time
+    
+    if attacked:
+        attack_time += 1
+    
     if jump_time >= 1:
         jump()
 
