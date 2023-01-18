@@ -138,7 +138,7 @@ def attack():
     elif direction == "right":
         temp_pos = knight.midright
         slash.image = "attack/attack_slash_r"
-        slash.pos = (knight.midleft[0] + 20, knight.midleft[1])
+        slash.pos = (knight.midright[0] + 20, knight.midright[1])
     attacked = True
 
 def on_key_down(key):
