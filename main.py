@@ -189,7 +189,7 @@ def on_key_down(key):
 
 # function for the jumping animation
 def jump_animation():
-    # temporary variable to change the animation more efficiently, helps with changing files depending on left or right
+    # temporary variable to change the animation more efficiently, helps with changing image files depending on left or right
     temp = ""
     if direction == "left":
         temp = "l"
@@ -209,7 +209,7 @@ def attack_animation():
     global attack_frame, direction, attacked # global variable
     attack_frame += 1 # adding one to attack_frame each time the attack animation function is called
 
-    # temporary variable to change the animation more efficiently, helps with changing files depending on left or right
+    # temporary variable to change the animation more efficiently, helps with changing image files depending on left or right
     temp = "" 
     if direction == "left":
         temp = "l"
@@ -239,38 +239,47 @@ def running_animation():
     global frames_running
     frames_running += 1
     
-    # temporary variable to change the animation more efficiently, helps with changing files depending on left or right
+    # temporary variable to change the animation more efficiently, helps with changing image files depending on left or right
     temp = "" 
     if direction == "left":
         temp = "l"
     elif direction == "right":
         temp = "r"
-        
+    
+    # checks which frame frames_running is at and depending on the frame will change the image of the player
     if frames_running >= 1 and frames_running < 3:
         knight.image = f"running/running_{temp}1"
     elif frames_running >= 3 and frames_running < 6:
         knight.image = f"running/running_{temp}2"
     elif frames_running >= 6 and frames_running < 9:
         knight.image = f"running/running_{temp}3"
+    # once all the running images are animated, frames_running is reset to 1 so the images will loop
     elif frames_running >= 12:
         frames_running = 1
 
+
+# function for the players idle animation
 def idle_animation():
-    global direction
+    global direction # global variable
+    # depending on which direction is player is facing, the idle animation will either be left or right through changing the players actor image
     if direction == "left":
         knight.image = "idle/idle_l1"
     elif direction == "right":
         knight.image = "idle/idle_r1"
 
 
+# function for the players fall animation
 def fall_animation():
-    global falling_time, direction
+    global falling_time, direction # global variables
+    
+    # temporary variable to change the animation more efficiently, helps with changing image files depending on left or right
     temp = ""
     if direction == "left":
         temp = "l"
     elif direction == "right":
         temp = "r"
-
+    
+    # depending on how long the player has been falling for the players actor image will change
     if falling_time > 0 and falling_time <= 10:
         knight.image = f"jumping/falling_{temp}1"
     elif falling_time > 10 and falling_time <= 20:
@@ -279,22 +288,27 @@ def fall_animation():
         knight.image = f"jumping/falling_{temp}3"
 
 
+# function for the players landing animation after falling
 # bad landing = When the character hits the ground at a greater velocity, the character wont be able to move for a short duration
+# this function takes in the parameter bad_landing which tells you if the user will be having a bad landing, is a boolean
 def landing_animation(bad_landing):
-    global direction, bad_landing_time, stunned, stunned_wait_time
+    global direction, bad_landing_time, stunned, stunned_wait_time # global variables
+    
+    # temporary variable to change the animation more efficiently, helps with changing image files depending on left or right
     temp = ""
     if direction == "left":
         temp = "l"
     elif direction == "right":
         temp = "r"
 
-    bad_landing_time += 1
+    bad_landing_time += 1 # add one to the bad landing counter each time the function is called
 
+    # the player actor's images will change depending on the bad landing frame counter range
     if bad_landing_time >= 1 and bad_landing_time <= 10:
-        knight.image = f"jumping/landing_{temp}1"
+        knight.image = f"jumping/landing_{temp}1" 
         if bad_landing:
             stunned = True
-            stunned_wait_time = abs(time.time())
+            stunned_wait_time = abs(time.time()) 
     elif bad_landing:
         if bad_landing_time > 10 and bad_landing_time <= 20:
             knight.image = f"jumping/landing_{temp}2"
@@ -362,7 +376,8 @@ def update():
 
 
 # Background Music
-if current_level == "tutorial":
-    music.play_once("tutorialmp")
+# will play different music depending on the level
+if current_level == "tutorial": 
+    music.play_once("tutorialmp") # plays the music file "tutorialmp"
 
-pgzrun.go()
+pgzrun.go() # run pygame zero
