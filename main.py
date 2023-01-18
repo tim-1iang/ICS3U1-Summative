@@ -1,10 +1,10 @@
 # left and right wall collision
 # player camera
-# background image
 # jump and jump animation
 # shorten animation left and right code
 # jump detect collision with max height
 # differing jump heights depending on key hold
+# attack cooldown
 
 
 # Importing modules
@@ -24,7 +24,6 @@ jumped = False
 direction = "right"
 bad_landing_time = 0
 stunned_wait_time = 0
-jumping_time = 0
 max_jump_height = 0
 jump_time = 0
 initial_height = 0
@@ -32,6 +31,7 @@ velocity_y = 0
 touched_ground = False
 stunned = False
 attacked = False
+attack_frame = 0
 attack_time = 0
 
 MAX_MOVEMENT = 6
@@ -57,7 +57,7 @@ knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0))
 # Function to draw into the game
 def draw():
         
-    global direction, attack_time, attacked
+    global attack_frame, attacked, current_level, attack_time
     screen.clear()
     
     background.draw()
@@ -68,13 +68,13 @@ def draw():
 
     if attacked:
         slash.draw()
-        if current_level == "tutorial" and attack_time >= 5:
+        if current_level == "tutorial" and attack_time >= 30:
+            screen.clear()
             background.draw()
             knight.draw()
             screen.draw.filled_rect(floor, (106, 117, 141))
             screen.draw.filled_rect(wall1, (106, 117, 141))
             screen.draw.filled_rect(wall2, (106, 117, 141))
-            attacked = False
             attack_time = 0
         
 
@@ -88,7 +88,6 @@ def character_gravity():
     elif falling_time > 20 and falling_time <= 30:
         return MAX_GRAVITY * 0.9
     elif falling_time > 30:
-        print(falling_time)
         return MAX_GRAVITY
     else:
         return 0
@@ -129,15 +128,13 @@ def jump():
 
 def attack():
     global attacked, direction
-    temp_pos = ()
     if direction == "left":
-        temp_pos = knight.midleft
         slash.image = "attack/attack_slash_l"
-        slash.pos = (temp_pos[0] - 20, temp_pos[1])
+        slash.pos = (knight.midleft[0] - 20, knight.midleft[1])
     elif direction == "right":
         temp_pos = knight.midright
         slash.image = "attack/attack_slash_r"
-        slash.pos = (temp_pos[0] + 20, temp_pos[1])
+        slash.pos = (knight.midleft[0] + 20, knight.midleft[1])
     attacked = True
     
 def on_key_down(key):
@@ -155,7 +152,7 @@ def on_key_down(key):
             if touched_ground:
                 jumped = True
                 jump()
-                jump_animation()
+                
 
         if key == keys.F:
             screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
@@ -169,9 +166,44 @@ def on_key_down(key):
 
 
 def jump_animation():
-    pass
+    temp = ""
+    if direction == "left":
+        temp = "l"
+    elif direction == "right":
+        temp = "r"
+        
+    if jump_time >= 0 and jump_time < 5:
+        knight.image = f"jumping/jumping_{temp}1"
+    elif  jump_time >= 5 and jump_time < 20:
+        knight.image = f"jumping/jumping_{temp}2"
+        
 
 
+def attack_animation():
+    global attack_frame, direction, attacked
+    attack_frame += 1
+    
+    temp = ""
+    if direction == "left":
+        temp = "l"
+    elif direction == "right":
+        temp = "r"
+        
+    if attack_frame >= 0 and attack_frame < 5:
+        knight.image = f"attack/attack_{temp}1"
+    elif attack_frame >= 5 and attack_frame < 10:
+        knight.image = f"attack/attack_{temp}2"
+    elif attack_frame >= 10 and attack_frame < 15:
+        knight.image = f"attack/attack_{temp}3"
+    elif attack_frame >= 15 and attack_frame < 20:
+        knight.image = f"attack/attack_{temp}4"
+    elif attack_frame >= 20 and attack_frame < 25:
+        knight.image = f"attack/attack_{temp}5"
+    elif attack_frame >= 25:
+        attack_frame = 0
+        attacked = False
+    
+    
 # Animation for running right
 def running_right_animation():
     global framesR
@@ -251,13 +283,18 @@ def landing_animation(bad_landing):
 
 # Function to update the game
 def update():
-    global direction, MAX_MOVEMENT, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, attack_time
+    global direction, MAX_MOVEMENT, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time
+    
+    if not(attacked) and not(jumped):
+        idle_animation()
     
     if attacked:
         attack_time += 1
+        attack_animation()
     
     if jump_time >= 1:
         jump()
+        jump_animation()
 
     if stunned:
         if abs(time.time()) >= stunned_wait_time + 1:
