@@ -45,16 +45,19 @@ ATTACK_COOLDOWN_TIME = 20 # the time it takes before attacking again
 
 
 # Background
+floor = Actor("background/floor", pos=(0, 720), anchor=("left", "bottom"))
 background = Actor("background/tutorial_1", pos=(640, 360))
 # Rects for the floors and walls
-floor = Rect(0, 660, 3840, 720)
+#floor = Rect(0, 660, 3840, 720)
 wall1 = Rect(500, 520, 520, 660)
-wall2 = Rect(200, 520, 100, 660)
+wall2 = Rect(100, 520, 120, 660)
 
+floors = [floor]
 
 # Entities
+hornet = Actor("hornet", pos=(400, 637), anchor=("center", "bottom"))
 slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attack slash
-knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor
+knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor, the player anchor is like the point which moves when the player is moved
 
 
 # Function to draw into the game
@@ -66,9 +69,10 @@ def draw():
     background.draw() # draw the background actor
     knight.draw() # draw the player
     # draw the floor and wall rects
-    screen.draw.filled_rect(floor, (106, 117, 141)) 
+    floor.draw()
     screen.draw.filled_rect(wall1, (106, 117, 141))
     screen.draw.filled_rect(wall2, (106, 117, 141))
+    hornet.draw()
 
     if attacked and attack_time >= 1: # when the player attacked and the time they attacked for is greater or equal to 1
         slash.draw() # draw the attack slash
@@ -77,7 +81,7 @@ def draw():
             screen.clear()
             background.draw()
             knight.draw()
-            screen.draw.filled_rect(floor, (106, 117, 141))
+            floor.draw()
             screen.draw.filled_rect(wall1, (106, 117, 141))
             screen.draw.filled_rect(wall2, (106, 117, 141))
 
@@ -157,6 +161,11 @@ def attack():
 # event handler function for when a key is pressed down, parameter key is used to take input of which key the user pressed down
 def on_key_down(key):
     global direction, jumped, stunned # global variables
+    
+    if key == keys.U:
+        print (knight.pos)
+        print (touched_ground)
+        print (jumped)
     
     # checks individual keys
     if not (stunned): # if the player is not stunned, so the player cant move when they are stunned
@@ -292,7 +301,7 @@ def fall_animation():
 # bad landing = When the character hits the ground at a greater velocity, the character wont be able to move for a short duration
 # this function takes in the parameter bad_landing which tells you if the user will be having a bad landing, is a boolean
 def landing_animation(bad_landing):
-    global direction, bad_landing_time, stunned, stunned_wait_time # global variables
+    global direction, bad_landing_time, stunned, stunned_wait_time, falling_time # global variables
     
     # temporary variable to change the animation more efficiently, helps with changing image files depending on left or right
     temp = ""
@@ -315,6 +324,8 @@ def landing_animation(bad_landing):
             knight.image = f"jumping/landing_{temp}2"
         elif bad_landing_time > 20 and bad_landing_time < 30:
             knight.image = f"jumping/landing_{temp}3"
+        elif bad_landing_time == 30:
+            falling_time = 0
     else:
         falling_time = 0 # once the player is done landing, the falling time will be reset to 0
 
