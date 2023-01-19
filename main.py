@@ -18,7 +18,7 @@ WIDTH = 1280
 HEIGHT = 720
 
 # Declaration of variables and constants
-current_level = "tutorial" # the current level the player is in
+current_level = "birth" # the current level the player is in
 frames_running = 0 # the frames for the player running animation
 falling_time = 0 # the time the player falls for
 jumped = False # if the player jumped or not
@@ -43,36 +43,52 @@ MAX_JUMP = 20 # The maximum speed the player can jump at
 HEIGHT_LIMIT = 250 # the height which the player cannot jump past
 ATTACK_COOLDOWN_TIME = 20 # the time it takes before attacking again
 
-
-# Background
-floor = Actor("background/floor", pos=(0, 720), anchor=("left", "bottom"))
-background = Actor("background/tutorial_1", pos=(640, 360))
-# Rects for the floors and walls
-#floor = Rect(0, 660, 3840, 720)
-wall1 = Rect(500, 520, 520, 660)
-wall2 = Rect(100, 520, 120, 660)
-
-floors = [floor]
-
 # Entities
 hornet = Actor("hornet", pos=(400, 637), anchor=("center", "bottom"))
 slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attack slash
 knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor, the player anchor is like the point which moves when the player is moved
 
+# Background
+birth_bg = Actor("background/birth/mainbg", pos=(640, 360))
+floor = Actor("background/floor", pos=(0, -100), anchor=("left", "bottom"))
+tutorial_bg = Actor("background/tutorial/mainbg", pos=(640, 360))
+# Rects for the floors and walls
+#floor = Rect(0, 660, 3840, 720)
+wall1 = Rect(500, 520, 520, 660)
+wall2 = Rect(100, 520, 120, 660)
+
+birth = [birth_bg, knight]
+tutorial = [tutorial_bg, floor, hornet, knight]
 
 # Function to draw into the game
 def draw():
-
     global attack_frame, attacked, current_level, attack_time # global variables
-    screen.clear() # clear the screen
 
+    screen.clear()
+    if current_level == "birth":
+        for x in birth:
+            x.draw()
+    elif current_level == "tutorial":
+        for x in tutorial:
+            x.draw()
+    
+    '''
+    while not(drawn):
+    
+    for i in levels:
+        if i == current_level:
+            for y in i:
+                
+        
+    
+    for i in backgrounds:
+        for x in i:
+           x.draw()
+    
     background.draw() # draw the background actor
-    knight.draw() # draw the player
     # draw the floor and wall rects
     floor.draw()
-    screen.draw.filled_rect(wall1, (106, 117, 141))
-    screen.draw.filled_rect(wall2, (106, 117, 141))
-    hornet.draw()
+    '''
 
     if attacked and attack_time >= 1: # when the player attacked and the time they attacked for is greater or equal to 1
         slash.draw() # draw the attack slash
@@ -82,9 +98,6 @@ def draw():
             background.draw()
             knight.draw()
             floor.draw()
-            screen.draw.filled_rect(wall1, (106, 117, 141))
-            screen.draw.filled_rect(wall2, (106, 117, 141))
-
 
 # function to calculate the player gravity speed
 def character_gravity():
@@ -333,8 +346,14 @@ def landing_animation(bad_landing):
 # event handler function to update the game
 # continuously runs
 def update():
-    global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time # global variables
+    global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time, current_level # global variables
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
+    
+    if current_level == "birth":
+        if knight.y > 720:
+            current_level = "tutorial"
+            floor.pos = (0, 720)
+            knight.pos = (540, 0)
     
     # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
     if not(attacked) and not(jumped) and not(falling_time > 30):
