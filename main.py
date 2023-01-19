@@ -42,6 +42,7 @@ MAX_GRAVITY = 9.8 # The maximum speed the player will fall at
 MAX_JUMP = 20 # The maximum speed the player can jump at
 HEIGHT_LIMIT = 250 # the height which the player cannot jump past
 ATTACK_COOLDOWN_TIME = 20 # the time it takes before attacking again
+HEALTH_LIMIT = 5
 
 # Entities
 hornet = Actor("hornet", pos=(400, 637), anchor=("center", "bottom"))
@@ -49,57 +50,53 @@ slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attac
 knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor, the player anchor is like the point which moves when the player is moved
 
 # Background
+focus_bar = Actor("inventory/focus_bar1", pos=(30, 30), anchor=("left", "top"))
+
+health_bar = []
+
+for i in range(1, HEALTH_LIMIT):
+    health = Actor("inventory/health", pos=(50, 50), anchor=("left", "top"))
+    health_bar.append(health)
+
+door = Actor("background/door", pos=(1200, 637), anchor=("middle", "bottom"))
 birth_bg = Actor("background/birth/mainbg", pos=(640, 360))
 floor = Actor("background/floor", pos=(0, -100), anchor=("left", "bottom"))
 tutorial_bg = Actor("background/tutorial/mainbg", pos=(640, 360))
+tutorial_bg2 = Actor("background/tutorial/bg2", pos=(1280, 0), anchor=("left", "top"))
+tutorial_overlay1 = Actor("background/tutorial/overlay1", pos=(0, 740), anchor=("left", "bottom"))
+
 # Rects for the floors and walls
 #floor = Rect(0, 660, 3840, 720)
 wall1 = Rect(500, 520, 520, 660)
 wall2 = Rect(100, 520, 120, 660)
 
 birth = [birth_bg, knight]
-tutorial = [tutorial_bg, floor, hornet, knight]
+tutorial = [tutorial_bg, tutorial_bg2, floor, door, hornet, knight, focus_bar]
 
 # Function to draw into the game
 def draw():
     global attack_frame, attacked, current_level, attack_time # global variables
+
     level_draw()
-    
-    '''
-    while not(drawn):
-    
-    for i in levels:
-        if i == current_level:
-            for y in i:
-                
-        
-    
-    for i in backgrounds:
-        for x in i:
-           x.draw()
-    
-    background.draw() # draw the background actor
-    # draw the floor and wall rects
-    floor.draw()
-    '''
 
     if attacked and attack_time >= 1: # when the player attacked and the time they attacked for is greater or equal to 1
         slash.draw() # draw the attack slash
         if current_level == "tutorial" and attack_time == 10: # when the current_level is "tutorial" and the time they attacked for is 10
         # redraw the entire screen without the attack slash
-            screen.clear()
-            background.draw()
-            knight.draw()
-            floor.draw()
+            level_draw()
 
 def level_draw():
     screen.clear()
+        
     if current_level == "birth":
         for x in birth:
             x.draw()
     elif current_level == "tutorial":
         for x in tutorial:
             x.draw()
+    
+    for y, z in enumerate(health_bar):
+        z.draw()
 
 # function to calculate the player gravity speed
 def character_gravity():
@@ -122,12 +119,12 @@ def character_gravity():
 # event handler function to check when the player lets go of a key, parameter key takes input of which key the user lifts up
 def on_key_up(key):
     global stunned # global variables
-    
+
     # Idle animation detection
     # checks if the player is stunned
     # then checks if the key they let go of is either left or right
     # if it is then the idle_animation function is called to change the animation state
-    if not (stunned): 
+    if not (stunned):
         if key == keys.LEFT:
             idle_animation()
         if key == keys.RIGHT:
@@ -156,14 +153,14 @@ def jump():
         velocity_y = 0 # the jump velocity is set to 0
         jump_time = 0 # the time for the player to jump is resetted
         jumped = False # jumped is set to False so the player cannot jump until they touched the ground
-        
+
     knight.y -= velocity_y # the player moves up depending on the jump speed everytime the function is called
 
 
 # function for the player attacking
 def attack():
     global attacked, direction # global variables
-    
+
     if direction == "left": # if the player is facing left
         slash.image = "attack/attack_slash_l" # change the slash image to a left slash
         slash.pos = (knight.midleft[0] - 20, knight.midleft[1]) # the position of the attack slash is the same pos of the players midleft but to the left by 20 pixels
@@ -176,15 +173,15 @@ def attack():
 # event handler function for when a key is pressed down, parameter key is used to take input of which key the user pressed down
 def on_key_down(key):
     global direction, jumped, stunned # global variables
-    
+
     if key == keys.U:
         print (knight.pos)
         print (touched_ground)
         print (jumped)
-    
+
     # checks individual keys
     if not (stunned): # if the player is not stunned, so the player cant move when they are stunned
-        
+
         # left and right keys which changes the direction variable
         if key == keys.LEFT:
             direction = "left"
@@ -199,9 +196,9 @@ def on_key_down(key):
                 jump() # call the jump function
 
         # F key for putting the window in fullscreen
-        if key == keys.F: 
+        if key == keys.F:
             screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
-    
+
         # Escape key to exit the game
         if key == keys.ESCAPE:
             exit()
@@ -219,7 +216,7 @@ def jump_animation():
         temp = "l"
     elif direction == "right":
         temp = "r"
-    
+
     # animation will change depending on how long the player has jumped for
     # the player of the image is changed to animate it
     if jump_time >= 0 and jump_time < 5:
@@ -234,13 +231,13 @@ def attack_animation():
     attack_frame += 1 # adding one to attack_frame each time the attack animation function is called
 
     # temporary variable to change the animation more efficiently, helps with changing image files depending on left or right
-    temp = "" 
+    temp = ""
     if direction == "left":
         temp = "l"
     elif direction == "right":
         temp = "r"
 
-    # animation will change depending on the frame of the attack_frame variable 
+    # animation will change depending on the frame of the attack_frame variable
     # the image of the player actor will be changed to animate it
     if attack_frame >= 0 and attack_frame < 5:
         knight.image = f"attack/attack_{temp}1"
@@ -262,14 +259,14 @@ def attack_animation():
 def running_animation():
     global frames_running
     frames_running += 1
-    
+
     # temporary variable to change the animation more efficiently, helps with changing image files depending on left or right
-    temp = "" 
+    temp = ""
     if direction == "left":
         temp = "l"
     elif direction == "right":
         temp = "r"
-    
+
     # checks which frame frames_running is at and depending on the frame will change the image of the player
     if frames_running >= 1 and frames_running < 3:
         knight.image = f"running/running_{temp}1"
@@ -295,14 +292,14 @@ def idle_animation():
 # function for the players fall animation
 def fall_animation():
     global falling_time, direction # global variables
-    
+
     # temporary variable to change the animation more efficiently, helps with changing image files depending on left or right
     temp = ""
     if direction == "left":
         temp = "l"
     elif direction == "right":
         temp = "r"
-    
+
     # depending on how long the player has been falling for the players actor image will change
     if falling_time > 0 and falling_time <= 10:
         knight.image = f"jumping/falling_{temp}1"
@@ -317,7 +314,7 @@ def fall_animation():
 # this function takes in the parameter bad_landing which tells you if the user will be having a bad landing, is a boolean
 def landing_animation(bad_landing):
     global direction, bad_landing_time, stunned, stunned_wait_time, falling_time # global variables
-    
+
     # temporary variable to change the animation more efficiently, helps with changing image files depending on left or right
     temp = ""
     if direction == "left":
@@ -329,7 +326,7 @@ def landing_animation(bad_landing):
 
     # the player actor's images will change depending on the bad landing frame counter range
     if bad_landing_time >= 1 and bad_landing_time <= 10:
-        knight.image = f"jumping/landing_{temp}1" 
+        knight.image = f"jumping/landing_{temp}1"
         if bad_landing: # if the player has a bad landing
             stunned = True # stunned is set to True so the player will be stunned
             stunned_wait_time = abs(time.time()) # the time of the stun
@@ -347,13 +344,13 @@ def landing_animation(bad_landing):
 def update():
     global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time, current_level # global variables
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
-    
+
     if current_level == "birth":
         if knight.y > 720:
             current_level = "tutorial"
             floor.pos = (0, 720)
             knight.pos = (540, 0)
-    
+
     # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
     if not(attacked) and not(jumped) and not(falling_time > 30):
         idle_animation()
@@ -373,13 +370,13 @@ def update():
             attack_time = 0 # the timer is reset to 0
             attacked = False # the player will not be "attacking"
             attack_cooldown = True # puts the player attacking on cooldown
-    
+
     # if the jump time is greater than one, then that means the player jumped and is in the air
     # continuously call the jump function and animation
     if jump_time >= 1:
-        jump() 
-        jump_animation() 
-    
+        jump()
+        jump_animation()
+
     # when the player is stunned
     if stunned:
         if abs(time.time()) >= stunned_wait_time + 1: # if one or more seconds passed after the time of the stun
@@ -394,7 +391,7 @@ def update():
         # the running_animation function is called to animate the player running
         # the player will move either left or right depending on which direction
         if keyboard.left:
-            direction = "left" 
+            direction = "left"
             running_animation()
             knight.x -= MAX_MOVEMENT
 
@@ -413,7 +410,7 @@ def update():
     # touched_ground will be set to True meaning the player has touched the ground
     # if the falling_time was bigger than 30 then the player will have a "bad landing"
     # the function landing_animation will have a parameter passed through depending on if it was a bad landing or not
-    # if 
+    # if
     if not (knight.colliderect(floor)) and not (jumped):
         knight.y += character_gravity()
         fall_animation()
@@ -423,11 +420,11 @@ def update():
             landing_animation(False)
         elif falling_time > 30:
             landing_animation(True)
-            
+
 
 # Background Music
 # will play different music depending on the level
-if current_level == "tutorial": 
+if current_level == "tutorial":
     music.play_once("tutorialmp") # plays the music file "tutorialmp"
 
 pgzrun.go() # run pygame zero
