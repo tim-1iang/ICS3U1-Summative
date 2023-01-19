@@ -51,18 +51,17 @@ knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the 
 
 # Background
 focus_bar = Actor("inventory/focus_bar1", pos=(30, 30), anchor=("left", "top"))
-
 health_bar = []
 
 for i in range(1, HEALTH_LIMIT):
-    health = Actor("inventory/health", pos=(50, 50), anchor=("left", "top"))
+    health = Actor("inventory/health", pos=(125, 85), anchor=("left", "top"))
     health_bar.append(health)
 
 door = Actor("background/door", pos=(1200, 637), anchor=("middle", "bottom"))
 birth_bg = Actor("background/birth/mainbg", pos=(640, 360))
 floor = Actor("background/floor", pos=(0, -100), anchor=("left", "bottom"))
 tutorial_bg = Actor("background/tutorial/mainbg", pos=(640, 360))
-tutorial_bg2 = Actor("background/tutorial/bg2", pos=(1280, 0), anchor=("left", "top"))
+scene1_bg = Actor("background/scene1/mainbg", pos=(0, 0), anchor=("left", "top"))
 tutorial_overlay1 = Actor("background/tutorial/overlay1", pos=(0, 740), anchor=("left", "bottom"))
 
 # Rects for the floors and walls
@@ -71,7 +70,8 @@ wall1 = Rect(500, 520, 520, 660)
 wall2 = Rect(100, 520, 120, 660)
 
 birth = [birth_bg, knight]
-tutorial = [tutorial_bg, tutorial_bg2, floor, door, hornet, knight, focus_bar]
+tutorial = [tutorial_bg, floor, door, hornet, knight, focus_bar]
+scene1 = [scene1_bg, floor, knight, focus_bar]
 
 # Function to draw into the game
 def draw():
@@ -87,14 +87,14 @@ def draw():
 
 def level_draw():
     screen.clear()
-        
+
     if current_level == "birth":
         for x in birth:
             x.draw()
     elif current_level == "tutorial":
         for x in tutorial:
             x.draw()
-    
+
     for y, z in enumerate(health_bar):
         z.draw()
 
@@ -175,10 +175,15 @@ def on_key_down(key):
     global direction, jumped, stunned # global variables
 
     if key == keys.U:
-        print (knight.pos)
-        print (touched_ground)
-        print (jumped)
-
+        print (knight.pos, "knight.pos")
+        print (touched_ground, "touched_ground")
+        print (jumped, "jumped")
+        print (attacked, "attacked")
+        print (falling_time, "falling_time")
+    
+    if key == keys.L:
+        screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+    
     # checks individual keys
     if not (stunned): # if the player is not stunned, so the player cant move when they are stunned
 
@@ -194,10 +199,11 @@ def on_key_down(key):
             if touched_ground: # checks if the user has touched the ground before jumping
                 jumped = True # change jumped to True meaning the user has jumped
                 jump() # call the jump function
-
+        
         # F key for putting the window in fullscreen
         if key == keys.F:
-            screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+            if knight.collidrect(door):
+                current_level = scene1
 
         # Escape key to exit the game
         if key == keys.ESCAPE:
@@ -366,6 +372,7 @@ def update():
     if attacked:
         attack_time += 1 # timer for the time the player has been attacking for
         attack_animation() # calls the attack_animation function to animate the player while attacking
+        print (attack_time)
         if attack_time >= 5: # once the attack time counter is greater or equal to 5
             attack_time = 0 # the timer is reset to 0
             attacked = False # the player will not be "attacking"
@@ -381,7 +388,9 @@ def update():
     if stunned:
         if abs(time.time()) >= stunned_wait_time + 1: # if one or more seconds passed after the time of the stun
             stunned = False # the player won't be stunned anymore
-            falling_time = 0
+
+    if touched_ground and not(stunned):
+        falling_time = 0
 
     # Character Movement
     # if the player is not stunned, to prevent moving when they are stunned
