@@ -63,14 +63,7 @@ tutorial = [tutorial_bg, floor, hornet, knight]
 # Function to draw into the game
 def draw():
     global attack_frame, attacked, current_level, attack_time # global variables
-
-    screen.clear()
-    if current_level == "birth":
-        for x in birth:
-            x.draw()
-    elif current_level == "tutorial":
-        for x in tutorial:
-            x.draw()
+    level_draw()
     
     '''
     while not(drawn):
@@ -98,6 +91,15 @@ def draw():
             background.draw()
             knight.draw()
             floor.draw()
+
+def level_draw():
+    screen.clear()
+    if current_level == "birth":
+        for x in birth:
+            x.draw()
+    elif current_level == "tutorial":
+        for x in tutorial:
+            x.draw()
 
 # function to calculate the player gravity speed
 def character_gravity():
@@ -337,10 +339,7 @@ def landing_animation(bad_landing):
             knight.image = f"jumping/landing_{temp}2"
         elif bad_landing_time > 20 and bad_landing_time < 30:
             knight.image = f"jumping/landing_{temp}3"
-        elif bad_landing_time == 30:
-            falling_time = 0
-    else:
-        falling_time = 0 # once the player is done landing, the falling time will be reset to 0
+
 
 
 # event handler function to update the game
@@ -385,6 +384,7 @@ def update():
     if stunned:
         if abs(time.time()) >= stunned_wait_time + 1: # if one or more seconds passed after the time of the stun
             stunned = False # the player won't be stunned anymore
+            falling_time = 0
 
     # Character Movement
     # if the player is not stunned, to prevent moving when they are stunned
