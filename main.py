@@ -34,6 +34,11 @@ cooldown_time = 0 # the cooldown period counter for attacks
 level_changed = False
 left_border = 15
 right_border = 1265
+chat_lock = False
+gruz_mother_frames = 0
+gruz_awake = False
+hit_cooldown = False
+hit_cooldown_time = 0
 
 MAX_MOVEMENT = 6 # The maximum speed the player can move horizontally
 MAX_GRAVITY = 9.8 # The maximum speed the player will fall at
@@ -42,11 +47,16 @@ HEIGHT_LIMIT = 250 # the height which the player cannot jump past
 ATTACK_COOLDOWN_TIME = 20 # the time it takes before attacking again
 HEALTH_LIMIT = 5
 MAX_FOCUS = 5
+HIT_COOLDOWN_TIME = 100
+
+health_left = HEALTH_LIMIT
 
 # Entities
 hornet = Actor("hornet/hornet_idle_r", pos=(-50, -50), anchor=("center", "bottom"))
 slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attack slash
 knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor, the player anchor is like the point which moves when the player is moved
+gruz_mother = Actor("gruzmother/sleeping/1", pos=(-50, -50), anchor=("center", "center"))
+enemies = [gruz_mother]
 
 # Background
 focus_bar = Actor("inventory/focus_bar1", pos=(30, 30), anchor=("left", "top"))
@@ -59,6 +69,7 @@ for i in range(0, HEALTH_LIMIT):
 tutorial_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
 birth_bg = Actor("background/birth/mainbg", pos=(640, 360))
 floor = Actor("background/floor", pos=(0, -100), anchor=("left", "bottom"))
+floor2 = Actor("background/floor", pos=(-50, -50), anchor=("left", "bottom"))
 tutorial_bg = Actor("background/tutorial/mainbg", pos=(640, 360))
 scene1_bg1 = Actor("background/scene1/mainbg", pos=(0, 0), anchor=("left", "top"))
 scene1_bg2 = Actor("background/scene1/bg_2", pos=(1200, 0), anchor=("left", "top"))
@@ -67,6 +78,8 @@ tutorial_overlay1 = Actor("background/tutorial/overlay1", pos=(0, 740), anchor=(
 scene1_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
 bossfight_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
 textbox = Actor("textboxes/textbox", pos=(-50, -50), anchor=("middle", "middle"))
+
+floors = [floor, floor2]
 
 # Dialouge/gametips
 interact_key = Actor("keys/fkey", anchor=("center", "bottom"), pos=(-50, -50))
@@ -78,8 +91,8 @@ wall2 = Rect(100, 520, 120, 660)
 
 birth = [birth_bg, knight, focus_bar]
 tutorial = [tutorial_bg, floor, tutorial_door, hornet, knight, focus_bar, interact_key, textbox]
-scene1 = [scene1_bg1, scene1_bg2, scene1_door, bossfight_door, floor, knight, focus_bar, interact_key]
-bossfight = [bossfight_bg, floor, knight, focus_bar, interact_key]
+scene1 = [scene1_bg1, scene1_bg2, scene1_door, bossfight_door, floor, floor2, knight, focus_bar, interact_key]
+bossfight = [bossfight_bg, floor, focus_bar, interact_key, gruz_mother, knight]
 
 # Function to draw into the game
 def draw():
@@ -111,6 +124,18 @@ def level_draw():
 
     for y, z in enumerate(health_bar):
         z.draw()
+
+def game_over():
+    print ("dead")
+
+def hit(enemy):
+    global health_bar, health_left, hit_cooldown
+    health_left -= 1
+    health_bar[health_left].image = "inventory/empty"
+    if health_left == 0:
+        game_over()
+    hit_cooldown = True
+    
 
 # function to calculate the player gravity speed
 def character_gravity():
@@ -186,7 +211,7 @@ def attack():
 
 # event handler function for when a key is pressed down, parameter key is used to take input of which key the user pressed down
 def on_key_down(key):
-    global direction, jumped, stunned, current_level, level_changed, textbox # global variables
+    global direction, jumped, stunned, current_level, level_changed, textbox, chat_lock # global variables
 
     if key == keys.U:
         print (knight.pos, "knight.pos")
@@ -201,9 +226,13 @@ def on_key_down(key):
 
     if key == keys.L:
         screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+        
+    # Escape key to exit the game
+    if key == keys.ESCAPE:
+        exit()
 
     # checks individual keys
-    if not (stunned): # if the player is not stunned, so the player cant move when they are stunned
+    if not (stunned) and not(chat_lock): # if the player is not stunned, so the player cant move when they are stunned
 
         # left and right keys which changes the direction variable
         if key == keys.LEFT:
@@ -224,6 +253,7 @@ def on_key_down(key):
                 level_changed = True
                 current_level = "scene1"
             elif knight.colliderect(hornet):
+                chat_lock = True
                 textbox.pos = (640, 120)
             elif knight.colliderect(scene1_door):
                 level_changed = True
@@ -231,10 +261,6 @@ def on_key_down(key):
             elif knight.colliderect(bossfight_door):
                 level_changed = True
                 current_level = "bossfight"
-
-        # Escape key to exit the game
-        if key == keys.ESCAPE:
-            exit()
 
         # X key to attack only if attacking is not on cooldown
         if key == keys.X and not(attack_cooldown):
@@ -370,6 +396,29 @@ def landing_animation(bad_landing):
         elif bad_landing_time > 20 and bad_landing_time < 30:
             knight.image = f"jumping/landing_{temp}3"
 
+def gruz_mother_animation():
+    global gruz_mother_frames, gruz_mother
+    gruz_mother_frames += 1
+    if not(gruz_awake):
+        if gruz_mother_frames > 0 and gruz_mother_frames <= 10:
+            gruz_mother.image = "gruzmother/sleeping/1"
+        elif gruz_mother_frames > 10 and gruz_mother_frames <= 20:
+            gruz_mother.image = "gruzmother/sleeping/2"
+        elif gruz_mother_frames > 20 and gruz_mother_frames <= 30:
+            gruz_mother.image = "gruzmother/sleeping/3"
+        elif gruz_mother_frames > 30 and gruz_mother_frames <= 40:
+            gruz_mother.image = "gruzmother/sleeping/4"
+        elif gruz_mother_frames > 40 and gruz_mother_frames <= 50:
+            gruz_mother.image = "gruzmother/sleeping/5"
+        elif gruz_mother_frames > 50 and gruz_mother_frames <= 60:
+            gruz_mother.image = "gruzmother/sleeping/6"
+        elif gruz_mother_frames > 60 and gruz_mother_frames <= 70:
+            gruz_mother.image = "gruzmother/sleeping/7"
+        elif gruz_mother_frames > 70 and gruz_mother_frames <= 80:
+            gruz_mother.image = "gruzmother/sleeping/8"
+        elif gruz_mother_frames > 80:
+            gruz_mother_frames = 1
+
 def hornet_animation():
     global hornet
     if knight.x >= hornet.x + 15:
@@ -381,11 +430,18 @@ def hornet_animation():
 # continuously runs
 def update():
     global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time, current_level, level_changed # global variables
-    global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key, bossfight_door
+    global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key, bossfight_door, gruz_mother, hit_cooldown
+    global hit_cooldown_time, floor2, floor
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
-
+    
+    gruz_mother_animation()
+    
     hornet_animation()
-
+    
+    for i in enemies:
+        if knight.colliderect(i) and not(hit_cooldown):
+            hit(i)
+    
     if knight.colliderect(hornet) or knight.colliderect(scene1_door) or knight.colliderect(tutorial_door) or knight.colliderect(bossfight_door):
         interact_key.pos = (knight.x, knight.y - 80)
     else:
@@ -402,6 +458,8 @@ def update():
 
     if level_changed:
         if current_level == "scene1":
+            floor.pos = (0, 720)
+            floor2.pos = (1280, 720)
             knight.pos = (100, 630)
             scene1_door.pos = (50, 637)
             tutorial_door.pos = (-50, -50)
@@ -416,8 +474,11 @@ def update():
             hornet.pos = (400, 637)
             level_changed = False
         elif current_level == "bossfight":
+            floor.pos = (0, 0)
+            floor2.pos = (-50, -50)
             bossfight_door.pos = (-50, -50)
             knight.pos = (100, 630)
+            gruz_mother.pos = (640, 580)
             level_changed = False
 
     # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
@@ -430,7 +491,13 @@ def update():
         if cooldown_time >= ATTACK_COOLDOWN_TIME: # if the cooldown timer is equal to or bigger than the set attack cooldown time
             cooldown_time = 0 # reset the cooldown timer to 0
             attack_cooldown = False # put attacking off cooldown
-
+    
+    if hit_cooldown:
+        hit_cooldown_time += 1
+        if hit_cooldown_time >= HIT_COOLDOWN_TIME:
+            hit_cooldown_time = 0
+            hit_cooldown = False
+    
     # when the user attacks
     if attacked:
         attack_time += 1 # timer for the time the player has been attacking for
@@ -456,7 +523,7 @@ def update():
 
     # Character Movement
     # if the player is not stunned, to prevent moving when they are stunned
-    if not (stunned):
+    if not (stunned) and not(chat_lock):
         # when the player holds the left or right key
         # the direction is changed corresponding to the direction they are facing
         # the running_animation function is called to animate the player running
@@ -470,6 +537,8 @@ def update():
                     scene1_door.x += MAX_MOVEMENT
                     scene1_bg1.x += MAX_MOVEMENT
                     scene1_bg2.x += MAX_MOVEMENT
+                    floor.x += MAX_MOVEMENT
+                    floor2.x += MAX_MOVEMENT
                 else:
                     direction = "left"
                     running_animation()
@@ -488,6 +557,8 @@ def update():
                     scene1_door.x -= MAX_MOVEMENT
                     scene1_bg1.x -= MAX_MOVEMENT
                     scene1_bg2.x -= MAX_MOVEMENT
+                    floor.x -= MAX_MOVEMENT
+                    floor2.x -= MAX_MOVEMENT
                 else:
                     direction = "right"
                     running_animation()
@@ -508,10 +579,12 @@ def update():
     # if the falling_time was bigger than 30 then the player will have a "bad landing"
     # the function landing_animation will have a parameter passed through depending on if it was a bad landing or not
     # if
-    if not (knight.colliderect(floor)) and not (jumped):
-        knight.y += character_gravity()
-        fall_animation()
-    elif knight.colliderect(floor):
+    if not(knight.colliderect(floor)):
+        if not(jumped):
+            knight.y += character_gravity()
+            fall_animation()
+    elif knight.colliderect(floor) or knight.colliderect(floor2):
+        print ("hi")
         touched_ground = True
         if falling_time > 0 and falling_time <= 30:
             landing_animation(False)
