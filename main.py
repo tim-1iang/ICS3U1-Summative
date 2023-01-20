@@ -48,9 +48,6 @@ hornet = Actor("hornet/hornet_idle_r", pos=(400, 637), anchor=("center", "bottom
 slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attack slash
 knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor, the player anchor is like the point which moves when the player is moved
 
-# Dialouge/gametips
-interact_key = Actor("keys/fkey", anchor=("center", "bottom"), pos=(-50, -50))
-
 # Background
 focus_bar = Actor("inventory/focus_bar1", pos=(30, 30), anchor=("left", "top"))
 health_bar = []
@@ -59,12 +56,17 @@ for i in range(0, HEALTH_LIMIT):
     health = Actor("inventory/health", pos=(125 + (i * 45), 85), anchor=("left", "top"))
     health_bar.append(health)
 
-tutorial_door = Actor("background/tutorial/door", pos=(1200, 637), anchor=("middle", "bottom"))
+tutorial_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
 birth_bg = Actor("background/birth/mainbg", pos=(640, 360))
 floor = Actor("background/floor", pos=(0, -100), anchor=("left", "bottom"))
 tutorial_bg = Actor("background/tutorial/mainbg", pos=(640, 360))
-scene1_bg = Actor("background/scene1/mainbg", pos=(640, 360))
+scene1_bg1 = Actor("background/scene1/mainbg", pos=(0, 0), anchor=("left", "top"))
+scene1_bg2 = Actor("background/scene1/bg_2", pos=(1200, 0), anchor=("left", "top"))
 tutorial_overlay1 = Actor("background/tutorial/overlay1", pos=(0, 740), anchor=("left", "bottom"))
+scene1_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
+
+# Dialouge/gametips
+interact_key = Actor("keys/fkey", anchor=("center", "bottom"), pos=(-50, -50))
 
 # Rects for the floors and walls
 #floor = Rect(0, 660, 3840, 720)
@@ -73,7 +75,7 @@ wall2 = Rect(100, 520, 120, 660)
 
 birth = [birth_bg, knight, focus_bar]
 tutorial = [tutorial_bg, floor, tutorial_door, hornet, knight, focus_bar, interact_key]
-scene1 = [scene1_bg, floor, knight, focus_bar]
+scene1 = [scene1_bg1, scene1_bg2, scene1_door, floor, knight, focus_bar]
 
 # Function to draw into the game
 def draw():
@@ -185,7 +187,9 @@ def on_key_down(key):
         print (jumped, "jumped")
         print (attacked, "attacked")
         print (falling_time, "falling_time")
-        print (knight.colliderect(tutorial_door), "tutorial_door")
+        print (knight.colliderect(tutorial_door), tutorial_door.pos, "tutorial_door")
+        print (knight.colliderect(scene1_door), scene1_door.pos, "scene1_door")
+        print (current_level, "current_level")
 
     if key == keys.L:
         screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
@@ -211,8 +215,11 @@ def on_key_down(key):
             if knight.colliderect(tutorial_door):
                 level_changed = True
                 current_level = "scene1"
-            if knight.colliderect(hornet):
+            elif knight.colliderect(hornet):
                 pass
+            elif knight.colliderect(scene1_door):
+                level_changed = True
+                current_level = "tutorial"
 
         # Escape key to exit the game
         if key == keys.ESCAPE:
@@ -363,27 +370,36 @@ def hornet_animation():
 # continuously runs
 def update():
     global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time, current_level, level_changed # global variables
-    global left_border, right_border
+    global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
 
     hornet_animation()
     
-    if knight.colliderect(tutorial_door) or knight.colliderect(hornet):
+    if knight.colliderect(hornet) or knight.colliderect(scene1_door) or knight.colliderect(tutorial_door):
         interact_key.pos = (knight.x, knight.y - 80)
     else:
         interact_key.pos = (-50, -50)
-    
+
     if current_level == "birth":
         if knight.y > 720:
             current_level = "tutorial"
+            scene1_door.pos = (-50, -50)
+            tutorial_door.pos = (1200, 637)
             floor.pos = (0, 720)
             knight.pos = (540, 0)
-        
+
     if level_changed:
         if current_level == "scene1":
             knight.pos = (100, 630)
+            scene1_door.pos = (50, 637)
+            tutorial_door.pos = (-50, -50)
             level_changed = False
-    
+        elif current_level == "tutorial":
+            knight.pos = (1200, 637)
+            scene1_door.pos = (-50, -50)
+            tutorial_door.pos = (1200, 637)
+            level_changed = False
+
     # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
     if not(attacked) and not(jumped) and not(falling_time > 30):
         idle_animation()
@@ -426,14 +442,38 @@ def update():
         # the running_animation function is called to animate the player running
         # the player will move either left or right depending on which direction
         if keyboard.left:
-            direction = "left"
-            running_animation()
-            knight.x -= MAX_MOVEMENT
+            if current_level == "scene1":
+                if knight.x <= 300 and scene1_bg1.x != 0:
+                    direction = "left"
+                    running_animation()
+                    scene1_door.x += MAX_MOVEMENT
+                    scene1_bg1.x += MAX_MOVEMENT
+                    scene1_bg2.x += MAX_MOVEMENT
+                else:
+                    direction = "left"
+                    running_animation()
+                    knight.x -= MAX_MOVEMENT
+            else:
+                direction = "left"
+                running_animation()
+                knight.x -= MAX_MOVEMENT
 
         if keyboard.right:
-            direction = "right"
-            running_animation()
-            knight.x += MAX_MOVEMENT
+            if current_level == "scene1":
+                if knight.x >= 1280 - 300 and scene1_bg2.x != 0:
+                    direction = "right"
+                    running_animation()
+                    scene1_door.x -= MAX_MOVEMENT
+                    scene1_bg1.x -= MAX_MOVEMENT
+                    scene1_bg2.x -= MAX_MOVEMENT
+                else:
+                    direction = "right"
+                    running_animation()
+                    knight.x += MAX_MOVEMENT
+            else:
+                direction = "right"
+                running_animation()
+                knight.x += MAX_MOVEMENT
 
 
     # Collision
@@ -455,15 +495,15 @@ def update():
             landing_animation(False)
         elif falling_time > 30:
             landing_animation(True)
-            
-    
+
+
     # border collision
     if knight.x <= left_border:
         knight.x = left_border + 1
     elif knight.x >= right_border:
         knight.x = right_border - 1
-        
-        
+
+
 # Background Music
 # will play different music depending on the level
 music.set_volume(0.5)
