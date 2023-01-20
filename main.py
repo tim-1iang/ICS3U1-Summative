@@ -75,7 +75,7 @@ wall2 = Rect(100, 520, 120, 660)
 
 birth = [birth_bg, knight, focus_bar]
 tutorial = [tutorial_bg, floor, tutorial_door, hornet, knight, focus_bar, interact_key]
-scene1 = [scene1_bg1, scene1_bg2, scene1_door, floor, knight, focus_bar]
+scene1 = [scene1_bg1, scene1_bg2, scene1_door, floor, knight, focus_bar, interact_key]
 
 # Function to draw into the game
 def draw():
@@ -190,6 +190,7 @@ def on_key_down(key):
         print (knight.colliderect(tutorial_door), tutorial_door.pos, "tutorial_door")
         print (knight.colliderect(scene1_door), scene1_door.pos, "scene1_door")
         print (current_level, "current_level")
+        print (interact_key.pos, "interact_key")
 
     if key == keys.L:
         screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
