@@ -1,12 +1,7 @@
 # things left to do
 #####################
 # left and right wall collision
-# player camera
-# shorten animation left and right code
-# jump detect collision with max height
 # differing jump heights depending on key hold
-# attack cooldown
-# list for order of drawing in each level
 
 
 # Importing modules
@@ -36,6 +31,9 @@ attack_frame = 0 # the attack animation frames
 attack_time = 0 # the time the player attacks for
 attack_cooldown = False # if the player has attacked and will the next attack need a cooldown period
 cooldown_time = 0 # the cooldown period counter for attacks
+level_changed = False
+left_border = 15
+right_border = 1265
 
 MAX_MOVEMENT = 6 # The maximum speed the player can move horizontally
 MAX_GRAVITY = 9.8 # The maximum speed the player will fall at
@@ -43,21 +41,25 @@ MAX_JUMP = 20 # The maximum speed the player can jump at
 HEIGHT_LIMIT = 250 # the height which the player cannot jump past
 ATTACK_COOLDOWN_TIME = 20 # the time it takes before attacking again
 HEALTH_LIMIT = 5
+MAX_FOCUS = 5
 
 # Entities
-hornet = Actor("hornet", pos=(400, 637), anchor=("center", "bottom"))
+hornet = Actor("hornet/hornet_idle_r", pos=(400, 637), anchor=("center", "bottom"))
 slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attack slash
 knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor, the player anchor is like the point which moves when the player is moved
+
+# Dialouge/gametips
+interact_key = Actor("fkey", anchor=("center", "center"), pos=(1212, 560))
 
 # Background
 focus_bar = Actor("inventory/focus_bar1", pos=(30, 30), anchor=("left", "top"))
 health_bar = []
 
-for i in range(1, HEALTH_LIMIT):
-    health = Actor("inventory/health", pos=(125, 85), anchor=("left", "top"))
+for i in range(0, HEALTH_LIMIT):
+    health = Actor("inventory/health", pos=(125 + (i * 45), 85), anchor=("left", "top"))
     health_bar.append(health)
 
-door = Actor("background/door", pos=(1200, 637), anchor=("middle", "bottom"))
+tutorial_door = Actor("background/tutorial/door", pos=(1200, 637), anchor=("middle", "bottom"))
 birth_bg = Actor("background/birth/mainbg", pos=(640, 360))
 floor = Actor("background/floor", pos=(0, -100), anchor=("left", "bottom"))
 tutorial_bg = Actor("background/tutorial/mainbg", pos=(640, 360))
@@ -69,8 +71,8 @@ tutorial_overlay1 = Actor("background/tutorial/overlay1", pos=(0, 740), anchor=(
 wall1 = Rect(500, 520, 520, 660)
 wall2 = Rect(100, 520, 120, 660)
 
-birth = [birth_bg, knight]
-tutorial = [tutorial_bg, floor, door, hornet, knight, focus_bar]
+birth = [birth_bg, knight, focus_bar]
+tutorial = [tutorial_bg, floor, tutorial_door, hornet, knight, focus_bar, interact_key]
 scene1 = [scene1_bg, floor, knight, focus_bar]
 
 # Function to draw into the game
@@ -93,6 +95,9 @@ def level_draw():
             x.draw()
     elif current_level == "tutorial":
         for x in tutorial:
+            x.draw()
+    elif current_level == "scene1":
+        for x in scene1:
             x.draw()
 
     for y, z in enumerate(health_bar):
@@ -172,7 +177,7 @@ def attack():
 
 # event handler function for when a key is pressed down, parameter key is used to take input of which key the user pressed down
 def on_key_down(key):
-    global direction, jumped, stunned # global variables
+    global direction, jumped, stunned, current_level, level_changed # global variables
 
     if key == keys.U:
         print (knight.pos, "knight.pos")
@@ -180,10 +185,10 @@ def on_key_down(key):
         print (jumped, "jumped")
         print (attacked, "attacked")
         print (falling_time, "falling_time")
-    
+
     if key == keys.L:
         screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
-    
+
     # checks individual keys
     if not (stunned): # if the player is not stunned, so the player cant move when they are stunned
 
@@ -199,11 +204,12 @@ def on_key_down(key):
             if touched_ground: # checks if the user has touched the ground before jumping
                 jumped = True # change jumped to True meaning the user has jumped
                 jump() # call the jump function
-        
+
         # F key for putting the window in fullscreen
         if key == keys.F:
-            if knight.collidrect(door):
-                current_level = scene1
+            if knight.colliderect(tutorial_door):
+                level_changed = True
+                current_level = "scene1"
 
         # Escape key to exit the game
         if key == keys.ESCAPE:
@@ -343,20 +349,38 @@ def landing_animation(bad_landing):
         elif bad_landing_time > 20 and bad_landing_time < 30:
             knight.image = f"jumping/landing_{temp}3"
 
-
+def hornet_animation():
+    global hornet
+    if knight.x >= hornet.x + 15:
+       hornet.image = "hornet/hornet_idle_r"
+    elif knight.x <= hornet.x - 15:
+        hornet.image = "hornet/hornet_idle_l"
 
 # event handler function to update the game
 # continuously runs
 def update():
-    global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time, current_level # global variables
+    global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time, current_level, level_changed # global variables
+    global left_border, right_border
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
 
+    hornet_animation()
+    
+    if knight.x <= left_border:
+        knight.x = left_border + 1
+    elif knight.x >= right_border:
+        knight.x = right_border - 1
+    
     if current_level == "birth":
         if knight.y > 720:
             current_level = "tutorial"
             floor.pos = (0, 720)
             knight.pos = (540, 0)
-
+        
+    if level_changed:
+        if current_level == "scene1":
+            knight.pos = (100, 630)
+            level_changed = False
+    
     # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
     if not(attacked) and not(jumped) and not(falling_time > 30):
         idle_animation()
@@ -372,7 +396,6 @@ def update():
     if attacked:
         attack_time += 1 # timer for the time the player has been attacking for
         attack_animation() # calls the attack_animation function to animate the player while attacking
-        print (attack_time)
         if attack_time >= 5: # once the attack time counter is greater or equal to 5
             attack_time = 0 # the timer is reset to 0
             attacked = False # the player will not be "attacking"
@@ -429,11 +452,13 @@ def update():
             landing_animation(False)
         elif falling_time > 30:
             landing_animation(True)
-
-
+            
 # Background Music
 # will play different music depending on the level
-if current_level == "tutorial":
-    music.play_once("tutorialmp") # plays the music file "tutorialmp"
+music.set_volume(0.5)
+music.play("tutorialmp") # plays the music file "tutorialmp"
+
+
+
 
 pgzrun.go() # run pygame zero
