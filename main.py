@@ -66,6 +66,7 @@ bossfight_bg = Actor("background/bossfight/mainbg", anchor=("left", "top"), pos=
 tutorial_overlay1 = Actor("background/tutorial/overlay1", pos=(0, 740), anchor=("left", "bottom"))
 scene1_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
 bossfight_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
+textbox = Actor("textboxes/textbox", pos=(-50, -50), anchor=("middle", "middle"))
 
 # Dialouge/gametips
 interact_key = Actor("keys/fkey", anchor=("center", "bottom"), pos=(-50, -50))
@@ -76,7 +77,7 @@ wall1 = Rect(500, 520, 520, 660)
 wall2 = Rect(100, 520, 120, 660)
 
 birth = [birth_bg, knight, focus_bar]
-tutorial = [tutorial_bg, floor, tutorial_door, hornet, knight, focus_bar, interact_key]
+tutorial = [tutorial_bg, floor, tutorial_door, hornet, knight, focus_bar, interact_key, textbox]
 scene1 = [scene1_bg1, scene1_bg2, scene1_door, bossfight_door, floor, knight, focus_bar, interact_key]
 bossfight = [bossfight_bg, floor, knight, focus_bar, interact_key]
 
@@ -185,7 +186,7 @@ def attack():
 
 # event handler function for when a key is pressed down, parameter key is used to take input of which key the user pressed down
 def on_key_down(key):
-    global direction, jumped, stunned, current_level, level_changed # global variables
+    global direction, jumped, stunned, current_level, level_changed, textbox # global variables
 
     if key == keys.U:
         print (knight.pos, "knight.pos")
@@ -223,7 +224,7 @@ def on_key_down(key):
                 level_changed = True
                 current_level = "scene1"
             elif knight.colliderect(hornet):
-                pass
+                textbox.pos = (640, 120)
             elif knight.colliderect(scene1_door):
                 level_changed = True
                 current_level = "tutorial"
