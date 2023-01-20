@@ -49,7 +49,7 @@ slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attac
 knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor, the player anchor is like the point which moves when the player is moved
 
 # Dialouge/gametips
-interact_key = Actor("fkey", anchor=("center", "center"), pos=(1212, 560))
+interact_key = Actor("keys/fkey", anchor=("center", "bottom"), pos=(-50, -50))
 
 # Background
 focus_bar = Actor("inventory/focus_bar1", pos=(30, 30), anchor=("left", "top"))
@@ -63,7 +63,7 @@ tutorial_door = Actor("background/tutorial/door", pos=(1200, 637), anchor=("midd
 birth_bg = Actor("background/birth/mainbg", pos=(640, 360))
 floor = Actor("background/floor", pos=(0, -100), anchor=("left", "bottom"))
 tutorial_bg = Actor("background/tutorial/mainbg", pos=(640, 360))
-scene1_bg = Actor("background/scene1/mainbg", pos=(0, 0), anchor=("left", "top"))
+scene1_bg = Actor("background/scene1/mainbg", pos=(640, 360))
 tutorial_overlay1 = Actor("background/tutorial/overlay1", pos=(0, 740), anchor=("left", "bottom"))
 
 # Rects for the floors and walls
@@ -185,6 +185,7 @@ def on_key_down(key):
         print (jumped, "jumped")
         print (attacked, "attacked")
         print (falling_time, "falling_time")
+        print (knight.colliderect(tutorial_door), "tutorial_door")
 
     if key == keys.L:
         screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
@@ -365,10 +366,10 @@ def update():
 
     hornet_animation()
     
-    if knight.x <= left_border:
-        knight.x = left_border + 1
-    elif knight.x >= right_border:
-        knight.x = right_border - 1
+    if knight.colliderect(tutorial_door) or knight.colliderect(hornet):
+        interact_key.pos = (knight.x, knight.y - 80)
+    else:
+        interact_key.pos = (-50, -50)
     
     if current_level == "birth":
         if knight.y > 720:
@@ -453,6 +454,14 @@ def update():
         elif falling_time > 30:
             landing_animation(True)
             
+    
+    # border collision
+    if knight.x <= left_border:
+        knight.x = left_border + 1
+    elif knight.x >= right_border:
+        knight.x = right_border - 1
+        
+        
 # Background Music
 # will play different music depending on the level
 music.set_volume(0.5)
