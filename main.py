@@ -44,7 +44,7 @@ HEALTH_LIMIT = 5
 MAX_FOCUS = 5
 
 # Entities
-hornet = Actor("hornet/hornet_idle_r", pos=(400, 637), anchor=("center", "bottom"))
+hornet = Actor("hornet/hornet_idle_r", pos=(-50, -50), anchor=("center", "bottom"))
 slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attack slash
 knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor, the player anchor is like the point which moves when the player is moved
 
@@ -77,7 +77,7 @@ wall2 = Rect(100, 520, 120, 660)
 
 birth = [birth_bg, knight, focus_bar]
 tutorial = [tutorial_bg, floor, tutorial_door, hornet, knight, focus_bar, interact_key]
-scene1 = [scene1_bg1, scene1_bg2, scene1_door, floor, knight, focus_bar, interact_key]
+scene1 = [scene1_bg1, scene1_bg2, scene1_door, bossfight_door, floor, knight, focus_bar, interact_key]
 bossfight = [bossfight_bg, floor, knight, focus_bar, interact_key]
 
 # Function to draw into the game
@@ -384,8 +384,8 @@ def update():
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
 
     hornet_animation()
-    
-    if knight.colliderect(hornet) or knight.colliderect(scene1_door) or knight.colliderect(tutorial_door):
+
+    if knight.colliderect(hornet) or knight.colliderect(scene1_door) or knight.colliderect(tutorial_door) or knight.colliderect(bossfight_door):
         interact_key.pos = (knight.x, knight.y - 80)
     else:
         interact_key.pos = (-50, -50)
@@ -396,6 +396,7 @@ def update():
             scene1_door.pos = (-50, -50)
             tutorial_door.pos = (1200, 637)
             floor.pos = (0, 720)
+            hornet.pos = (400, 637)
             knight.pos = (540, 0)
 
     if level_changed:
@@ -403,13 +404,18 @@ def update():
             knight.pos = (100, 630)
             scene1_door.pos = (50, 637)
             tutorial_door.pos = (-50, -50)
+            bossfight_door.pos = (2400, 637)
+            hornet.pos = (-50, -50)
             level_changed = False
         elif current_level == "tutorial":
             knight.pos = (1200, 637)
             scene1_door.pos = (-50, -50)
             tutorial_door.pos = (1200, 637)
+            bossfight_door.pos = (-50, -50)
+            hornet.pos = (400, 637)
             level_changed = False
         elif current_level == "bossfight":
+            bossfight_door.pos = (-50, -50)
             knight.pos = (100, 630)
             level_changed = False
 
