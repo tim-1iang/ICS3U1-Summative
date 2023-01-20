@@ -62,8 +62,10 @@ floor = Actor("background/floor", pos=(0, -100), anchor=("left", "bottom"))
 tutorial_bg = Actor("background/tutorial/mainbg", pos=(640, 360))
 scene1_bg1 = Actor("background/scene1/mainbg", pos=(0, 0), anchor=("left", "top"))
 scene1_bg2 = Actor("background/scene1/bg_2", pos=(1200, 0), anchor=("left", "top"))
+bossfight_bg = Actor("background/bossfight/mainbg", anchor=("left", "top"), pos=(0, 0))
 tutorial_overlay1 = Actor("background/tutorial/overlay1", pos=(0, 740), anchor=("left", "bottom"))
 scene1_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
+bossfight_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
 
 # Dialouge/gametips
 interact_key = Actor("keys/fkey", anchor=("center", "bottom"), pos=(-50, -50))
@@ -76,6 +78,7 @@ wall2 = Rect(100, 520, 120, 660)
 birth = [birth_bg, knight, focus_bar]
 tutorial = [tutorial_bg, floor, tutorial_door, hornet, knight, focus_bar, interact_key]
 scene1 = [scene1_bg1, scene1_bg2, scene1_door, floor, knight, focus_bar, interact_key]
+bossfight = [bossfight_bg, floor, knight, focus_bar, interact_key]
 
 # Function to draw into the game
 def draw():
@@ -85,7 +88,7 @@ def draw():
 
     if attacked and attack_time >= 1: # when the player attacked and the time they attacked for is greater or equal to 1
         slash.draw() # draw the attack slash
-        if current_level == "tutorial" and attack_time == 10: # when the current_level is "tutorial" and the time they attacked for is 10
+        if attack_time == 10: # when the current_level is "tutorial" and the time they attacked for is 10
         # redraw the entire screen without the attack slash
             level_draw()
 
@@ -100,6 +103,9 @@ def level_draw():
             x.draw()
     elif current_level == "scene1":
         for x in scene1:
+            x.draw()
+    elif current_level == "bossfight":
+        for x in bossfight:
             x.draw()
 
     for y, z in enumerate(health_bar):
@@ -221,6 +227,9 @@ def on_key_down(key):
             elif knight.colliderect(scene1_door):
                 level_changed = True
                 current_level = "tutorial"
+            elif knight.colliderect(bossfight_door):
+                level_changed = True
+                current_level = "bossfight"
 
         # Escape key to exit the game
         if key == keys.ESCAPE:
@@ -371,7 +380,7 @@ def hornet_animation():
 # continuously runs
 def update():
     global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time, current_level, level_changed # global variables
-    global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key
+    global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key, bossfight_door
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
 
     hornet_animation()
@@ -399,6 +408,9 @@ def update():
             knight.pos = (1200, 637)
             scene1_door.pos = (-50, -50)
             tutorial_door.pos = (1200, 637)
+            level_changed = False
+        elif current_level == "bossfight":
+            knight.pos = (100, 630)
             level_changed = False
 
     # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
@@ -447,6 +459,7 @@ def update():
                 if knight.x <= 300 and scene1_bg1.x != 0:
                     direction = "left"
                     running_animation()
+                    bossfight_door.x += MAX_MOVEMENT
                     scene1_door.x += MAX_MOVEMENT
                     scene1_bg1.x += MAX_MOVEMENT
                     scene1_bg2.x += MAX_MOVEMENT
@@ -464,6 +477,7 @@ def update():
                 if knight.x >= 1280 - 300 and scene1_bg2.x != 0:
                     direction = "right"
                     running_animation()
+                    bossfight_door.x -= MAX_MOVEMENT
                     scene1_door.x -= MAX_MOVEMENT
                     scene1_bg1.x -= MAX_MOVEMENT
                     scene1_bg2.x -= MAX_MOVEMENT
