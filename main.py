@@ -211,6 +211,8 @@ def on_key_down(key):
             if knight.colliderect(tutorial_door):
                 level_changed = True
                 current_level = "scene1"
+            if knight.colliderect(hornet):
+                pass
 
         # Escape key to exit the game
         if key == keys.ESCAPE:
