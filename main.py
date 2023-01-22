@@ -2,7 +2,6 @@
 # Importing modules
 import pgzrun
 from pgzhelper import *
-from time import sleep
 from random import randint
 
 # Declaring the screen sizes
@@ -47,9 +46,10 @@ gruz_animation_loops = 0
 gruz_one_hit = False
 gruz_to_knight_direction = "l"
 gruz_charged = False
+music_changed = True
 
 
-MAX_MOVEMENT = 16 # The maximum speed the player can move horizontally
+MAX_MOVEMENT = 8 # The maximum speed the player can move horizontally
 MAX_GRAVITY = 9.8 # The maximum speed the player will fall at
 MAX_JUMP = 20 # The maximum speed the player can jump at
 HEIGHT_LIMIT = 250 # the height which the player cannot jump past
@@ -58,7 +58,7 @@ HEALTH_LIMIT = 5
 MAX_FOCUS = 5
 HIT_COOLDOWN_TIME = 100
 TEXT_BOX_POS = (640, 120)
-GRUZ_MOTHER_MAX_HEALTH = 3
+GRUZ_MOTHER_MAX_HEALTH = 10
 
 
 health_left = HEALTH_LIMIT
@@ -553,32 +553,32 @@ def gruz_mother_animation():
     elif gruz_mother_phase == "slam":
         # every slam is one animation loop, check gruz_mother's closest ceiling/floor
         if gruz_animation_loops % 2 == 0:
-            #if gruz_mother.midtop[1] <= 157.5 and gruz_mother.midtop[1] > 50:
-                
-            if gruz_mother.midtop[1] >= 50 and gruz_mother.midtop[1] <= 0:
+
+            if gruz_mother.midtop[1] <= 50 and gruz_mother.midtop[1] >= 0:
                 gruz_mother.image = f"gruzmother/slam/up_{gruz_direction}"
             else:
                 gruz_mother.image = f"gruzmother/slam/recover_{gruz_direction}"
-                
+
         elif gruz_animation_loops % 2 == 1:
-            
+
             if gruz_mother.midbottom[1] >= floor.midtop[1] - 50 and gruz_mother.midbottom[1] <= floor.midtop[1]:
                 gruz_mother.image = f"gruzmother/slam/down_{gruz_direction}"
             else:
                 gruz_mother.image = f"gruzmother/slam/recover_{gruz_direction}"
-                
+
         if gruz_mother.midtop[1] <= 0 or gruz_mother.midbottom[1] >= floor.midtop[1]:
-            gruz_animation_loops += 1    
-                
+            gruz_animation_loops += 1
+
         if gruz_animation_loops == 12:
+            gruz_mother_frames = 0
             gruz_animation_loops = 0
             gruz_mother_phase = "flying"
-        
+
 
 
 def gruz_mother_fight():
     global gruz_mother_phase, gruz_direction, gruz_health, gruz_x, gruz_y, gruz_one_hit, enemies, gruz_animation_loops, gruz_to_knight_direction, gruz_charged
-    
+
     if gruz_mother_phase == "slam":
         if gruz_mother.midright[0] >= 1280 or gruz_mother.midleft[0] <= 0:
             if gruz_direction == "l":
@@ -589,12 +589,12 @@ def gruz_mother_fight():
             gruz_y = 15
         elif gruz_animation_loops % 2 == 1:
             gruz_y = -15
-            
+
         if gruz_direction == "l":
-            gruz_x = -5
+            gruz_x = -7
         elif gruz_direction == "r":
-            gruz_x = 5
-    
+            gruz_x = 7
+
     if gruz_mother_phase == "fall" and not(gruz_mother.colliderect(floor)):
         gruz_mother.y += MAX_GRAVITY
 
@@ -609,7 +609,7 @@ def gruz_mother_fight():
         enemies.remove(gruz_mother)
 
     if gruz_mother_phase == "flying" and gruz_animation_loops >= 10:
-        num = randint(2, 3)
+        num = randint(1, 3)
         gruz_animation_loops = 0
         if num == 1:
             gruz_mother_phase = "charge"
@@ -639,9 +639,9 @@ def gruz_mother_fight():
         if gruz_animation_loops == 0 and gruz_mother_frames > 40:
             if not(gruz_charged):
                 if gruz_to_knight_direction == "l":
-                    gruz_x = -15
+                    gruz_x = -12
                 elif gruz_to_knight_direction == "r":
-                    gruz_x = 15
+                    gruz_x = 12
                 if (knight.y - gruz_mother.y) > 0 and (knight.y - gruz_mother.y) <= 157.5:
                     gruz_y = 5
                 elif (knight.y - gruz_mother.y) <= 0 and (knight.y - gruz_mother.y) >= -157.5:
@@ -651,7 +651,6 @@ def gruz_mother_fight():
                 gruz_charged = True
         elif gruz_animation_loops == 1:
             gruz_charged = False
-            pass
 
     if not(gruz_health < 0) and not(gruz_mother_phase == "sleeping") and not(gruz_mother_phase == "wakeup"):
         gruz_mother.x += gruz_x
@@ -694,25 +693,35 @@ def hornet_animation():
                 hornet_animation_frames = 1
         else:
             hornet.image = "hornet/idle/hornet_idle_l"
-
+            
 
 # event handler function to update the game
 # continuously runs
 def update():
     global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_cooldown, cooldown_time, current_level, level_changed # global variables
     global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key, bossfight_door, gruz_mother, hit_cooldown, chat_lock, slash
-    global hit_cooldown_time, floor2, floor, gruz_mother_phase, gruz_phase_time, gruz_health
+    global hit_cooldown_time, floor2, floor, gruz_mother_phase, gruz_phase_time, gruz_health, music_changed
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
     gruz_mother_animation()
 
     hornet_animation()
 
     gruz_mother_fight()
-
+    
+    if music_changed:
+        if current_level == "birth":
+            music.play("tutorialmp")
+            music_changed = False
+        elif current_level == "bossfight":
+            music.stop()
+            music.play("hornetmp")
+            music_changed = False
+            
     for i in enemies:
         if i == gruz_mother and slash.colliderect(i) and gruz_mother_phase == "sleeping":
             gruz_mother_phase = "wakeup"
             gruz_mother.y -= 50
+            music_changed = True
 
     for i in enemies:
         if knight.colliderect(i) and not(hit_cooldown) and not(gruz_mother_phase == "sleeping"):
@@ -874,10 +883,8 @@ def update():
         knight.x = right_border - 1
 
 
-# Background Music
-# will play different music depending on the level
-music.set_volume(0.5)
-music.play("tutorialmp") # plays the music file "tutorialmp"
+
+
 
 
 
