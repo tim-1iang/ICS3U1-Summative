@@ -1,13 +1,9 @@
-# things left to do
-#####################
-# left and right wall collision
-# differing jump heights depending on key hold
-
 
 # Importing modules
 import pgzrun
 from pgzhelper import *
 from time import sleep
+from random import randint
 
 # Declaring the screen sizes
 WIDTH = 1280
@@ -38,10 +34,20 @@ right_border = 1265
 chat_lock = False
 gruz_mother_frames = 0
 gruz_awake = False
+gruz_mother_phase = "sleeping"
 hit_cooldown = False
 hit_cooldown_time = 0
 hornet_animation_frames = 0
 next_line = False
+current_line = -1
+interacted_with = ""
+gruz_phase_time = 0
+gruz_direction = "l"
+gruz_x = -4
+gruz_y = 1
+gruz_animation_loops = 0
+gruz_one_hit = False
+
 
 MAX_MOVEMENT = 6 # The maximum speed the player can move horizontally
 MAX_GRAVITY = 9.8 # The maximum speed the player will fall at
@@ -52,14 +58,17 @@ HEALTH_LIMIT = 5
 MAX_FOCUS = 5
 HIT_COOLDOWN_TIME = 100
 TEXT_BOX_POS = (640, 120)
+GRUZ_MOTHER_MAX_HEALTH = 3
+
 
 health_left = HEALTH_LIMIT
+gruz_health = GRUZ_MOTHER_MAX_HEALTH
 
 # Entities
 hornet = Actor("hornet/idle/hornet_idle_r", pos=(-50, -50), anchor=("center", "bottom"))
 slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attack slash
 knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor, the player anchor is like the point which moves when the player is moved
-gruz_mother = Actor("gruzmother/sleeping/1", pos=(-50, -50), anchor=("center", "center"))
+gruz_mother = Actor("gruzmother/sleeping/1", pos=(-200, -200), anchor=("center", "center"))
 enemies = [gruz_mother]
 
 # Background
@@ -81,7 +90,7 @@ bossfight_bg = Actor("background/bossfight/mainbg", anchor=("left", "top"), pos=
 tutorial_overlay1 = Actor("background/tutorial/overlay1", pos=(0, 740), anchor=("left", "bottom"))
 scene1_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
 bossfight_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
-textbox = Actor("textboxes/textbox", pos=(-50, -50), anchor=("middle", "middle"))
+textbox = Actor("textboxes/textbox", pos=(-100, -100), anchor=("middle", "middle"))
 
 # Dialouge/gametips
 interact_key = Actor("keys/fkey", anchor=("center", "bottom"), pos=(-50, -50))
@@ -110,10 +119,11 @@ def draw():
     global attack_frame, attacked, current_level, attack_time # global variables
 
     level_draw()
-    
+
     if chat_lock:
-        hornet_dialouge()
-    
+        if interacted_with == "hornet":
+            hornet_dialouge()
+
     if attacked and attack_time >= 1: # when the player attacked and the time they attacked for is greater or equal to 1
         slash.draw() # draw the attack slash
         if attack_time == 10: # when the current_level is "tutorial" and the time they attacked for is 10
@@ -142,11 +152,19 @@ def level_draw():
     enter_key.draw()
 
 def hornet_dialouge():
-    global next_line
-    for i, x in enumerate(dialouge):
-        screen.draw.text(dialouge[i], center=TEXT_BOX_POS)
-        next_line = True
+    global next_line, current_line, chat_lock, textbox, enter_key
+    if not(current_line == len(dialouge)):
+        screen.draw.text(dialouge[current_line], center=TEXT_BOX_POS)
+        if not(next_line):
+            next_line = True
+            current_line += 1
+    else:
+        current_line = -1
+        chat_lock = False
+        textbox.pos = (-100, -100)
+        enter_key.pos = (-100, -100)
         
+
 
 def game_over():
     print ("dead")
@@ -234,12 +252,12 @@ def attack():
 
 # event handler function for when a key is pressed down, parameter key is used to take input of which key the user pressed down
 def on_key_down(key):
-    global direction, jumped, stunned, current_level, level_changed, textbox, chat_lock, next_line # global variables
+    global direction, jumped, stunned, current_level, level_changed, textbox, chat_lock, next_line, interacted_with, enter_key # global variables
     
     if next_line:
         if key == keys.RETURN:
             next_line = False
-    
+
     if key == keys.U:
         print (knight.pos, "knight.pos")
         print (touched_ground, "touched_ground")
@@ -251,6 +269,8 @@ def on_key_down(key):
         print (current_level, "current_level")
         print (interact_key.pos, "interact_key")
         print (hornet.image, "hornet")
+        print (gruz_mother_phase, "gruz_mother_phase")
+        print (gruz_health, "gruz_health")
 
     if key == keys.L:
         screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
@@ -281,6 +301,7 @@ def on_key_down(key):
                 level_changed = True
                 current_level = "scene1"
             elif knight.colliderect(hornet):
+                interacted_with = "hornet"
                 textbox.pos = TEXT_BOX_POS
                 enter_key.pos = (970, 200)
                 chat_lock = True
@@ -294,7 +315,6 @@ def on_key_down(key):
         # X key to attack only if attacking is not on cooldown
         if key == keys.X and not(attack_cooldown):
             attack()
-
 
 # function for the jumping animation
 def jump_animation():
@@ -426,9 +446,9 @@ def landing_animation(bad_landing):
             knight.image = f"jumping/landing_{temp}3"
 
 def gruz_mother_animation():
-    global gruz_mother_frames, gruz_mother
+    global gruz_mother_frames, gruz_mother, gruz_mother_phase, gruz_direction, gruz_animation_loops
     gruz_mother_frames += 1
-    if not(gruz_awake):
+    if gruz_mother_phase == "sleeping":
         if gruz_mother_frames > 0 and gruz_mother_frames <= 10:
             gruz_mother.image = "gruzmother/sleeping/1"
         elif gruz_mother_frames > 10 and gruz_mother_frames <= 20:
@@ -447,12 +467,86 @@ def gruz_mother_animation():
             gruz_mother.image = "gruzmother/sleeping/8"
         elif gruz_mother_frames > 80:
             gruz_mother_frames = 1
+    elif gruz_mother_phase == "wakeup" or gruz_mother_phase == "dying":
+        if gruz_mother_frames > 0 and gruz_mother_frames <= 10:
+            gruz_mother.image = "gruzmother/wakeup/1"
+        elif gruz_mother_frames > 10 and gruz_mother_frames <= 20:
+            gruz_mother.image = "gruzmother/wakeup/2"
+        elif gruz_mother_frames > 20 and gruz_mother_frames <= 30:
+            gruz_mother.image = "gruzmother/wakeup/3"
+        elif gruz_mother_frames > 30 and gruz_mother_frames <= 40:
+            gruz_mother.image = "gruzmother/wakeup/4"
+        elif gruz_mother_frames > 40 and gruz_mother_phase == "wakeup":
+            if gruz_animation_loops >= 2:
+                gruz_mother_phase = "flying"
+                gruz_animation_loops = 0
+            else:
+                gruz_animation_loops += 1
+            gruz_mother_frames = 1
+        elif gruz_mother_frames > 40 and gruz_mother_phase == "dying":
+            if gruz_animation_loops >= 3:
+                gruz_mother_phase = "dead"
+                gruz_animation_loops = 0
+            else:
+                gruz_animation_loops += 1
+            gruz_mother_frames = 1
+    elif gruz_mother_phase == "flying":
+        if gruz_mother_frames > 0 and gruz_mother_frames <= 10:
+            gruz_mother.image = f"gruzmother/flying/1{gruz_direction}"
+        elif gruz_mother_frames > 10 and gruz_mother_frames <= 20:
+            gruz_mother.image = f"gruzmother/flying/2{gruz_direction}"
+        elif gruz_mother_frames > 20 and gruz_mother_frames <= 30:
+            gruz_mother.image = f"gruzmother/flying/3{gruz_direction}"
+        elif gruz_mother_frames > 30 and gruz_mother_frames <= 40:
+            gruz_mother.image = f"gruzmother/flying/4{gruz_direction}"
+        elif gruz_mother_frames > 40:
+            gruz_mother_frames = 1
+        
+
+def gruz_mother_fight():
+    global gruz_mother_phase, gruz_direction, gruz_health, gruz_phase_time, gruz_x, gruz_y, gruz_one_hit
+    
+    if slash.colliderect(gruz_mother) and not(gruz_mother_phase == "dead") and not(gruz_one_hit):
+        gruz_one_hit = True
+        gruz_health -= 1
+    elif not(slash.colliderect(gruz_mother)):
+        gruz_one_hit = False
+    
+    if gruz_health == 0:
+        gruz_mother_phase = "dying"
+    
+    if gruz_mother_phase == "flying" and gruz_phase_time == 50:
+        num = randint(1, 3)
+        if num == 1:
+            gruz_mother_phase = "charge"
+        elif num > 1:
+            gruz_mother_phase = "slam"
+    
+    if gruz_mother.midright[0] >= 1280:
+        gruz_direction = "l"
+        gruz_x = -4
+        
+    elif gruz_mother.midleft[0] <= 0:
+        gruz_direction = "r"
+        gruz_x = 4
+        
+    if gruz_mother.midtop[1] <= 0:
+        gruz_y = 1
+    elif gruz_mother.midbottom[1] >= 637:
+        gruz_y = -1
+        
+    
+    if gruz_mother_phase == "flying":
+        gruz_mother.x += gruz_x
+        gruz_mother.y += gruz_y
+    
+    
 
 def hornet_animation():
     global hornet, hornet_animation_frames
     hornet_animation_frames += 1
     if knight.x >= hornet.x + 15:
-        if chat_lock:
+        if chat_lock and current_line < 2:
             if hornet_animation_frames > 0 and hornet_animation_frames <= 10:
                 hornet.image = "hornet/attack/1r"
             elif hornet_animation_frames > 10 and hornet_animation_frames <= 20:
@@ -468,7 +562,7 @@ def hornet_animation():
         else:
             hornet.image = "hornet/idle/hornet_idle_r"
     elif knight.x <= hornet.x - 15:
-        if chat_lock:
+        if chat_lock and current_line < 2:
             if hornet_animation_frames > 0 and hornet_animation_frames <= 10:
                 hornet.image = "hornet/attack/1l"
             elif hornet_animation_frames > 10 and hornet_animation_frames <= 20:
@@ -483,19 +577,26 @@ def hornet_animation():
                 hornet_animation_frames = 1
         else:
             hornet.image = "hornet/idle/hornet_idle_l"
-        
+
 
 # event handler function to update the game
 # continuously runs
 def update():
     global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time, current_level, level_changed # global variables
     global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key, bossfight_door, gruz_mother, hit_cooldown, chat_lock
-    global hit_cooldown_time, floor2, floor
+    global hit_cooldown_time, floor2, floor, gruz_mother_phase, gruz_phase_time, gruz_health
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
 
     gruz_mother_animation()
 
     hornet_animation()
+        
+    gruz_mother_fight()
+    
+    for i in enemies:
+        if i == gruz_mother and slash.colliderect(i) and gruz_mother_phase == "sleeping":
+            gruz_mother_phase = "wakeup"
+            gruz_mother.y -= 100
     
     for i in enemies:
         if knight.colliderect(i) and not(hit_cooldown):
