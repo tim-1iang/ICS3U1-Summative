@@ -25,7 +25,6 @@ touched_ground = False # if the player touched the ground or not
 stunned = False # if the player is going to be stunned
 attacked = False # if the player has attacked
 attack_frame = 0 # the attack animation frames
-attack_time = 0 # the time the player attacks for
 attack_cooldown = False # if the player has attacked and will the next attack need a cooldown period
 cooldown_time = 0 # the cooldown period counter for attacks
 level_changed = False
@@ -41,7 +40,6 @@ hornet_animation_frames = 0
 next_line = False
 current_line = -1
 interacted_with = ""
-gruz_phase_time = 0
 gruz_direction = "l"
 gruz_x = -4
 gruz_y = 1
@@ -109,26 +107,21 @@ dialouge = ["HOW DARE YOU BREAK IN TO HALLOWNEST!",
 wall1 = Rect(500, 520, 520, 660)
 wall2 = Rect(100, 520, 120, 660)
 
-birth = [birth_bg, knight, focus_bar]
-tutorial = [tutorial_bg, floor, tutorial_door, hornet, knight, focus_bar, interact_key]
-scene1 = [scene1_bg1, scene1_bg2, scene1_door, bossfight_door, floor, floor2, knight, focus_bar, interact_key]
-bossfight = [bossfight_bg, floor, focus_bar, interact_key, gruz_mother, knight]
+birth = [birth_bg, slash, knight, focus_bar]
+tutorial = [tutorial_bg, floor, tutorial_door, hornet, slash, knight, focus_bar, interact_key]
+scene1 = [scene1_bg1, scene1_bg2, scene1_door, bossfight_door, floor, floor2, slash, knight, focus_bar, interact_key]
+bossfight = [bossfight_bg, floor, focus_bar, interact_key, gruz_mother, slash, knight]
 
 # Function to draw into the game
 def draw():
-    global attack_frame, attacked, current_level, attack_time # global variables
-
+    global attack_frame, attacked, current_level # global variables
+    
     level_draw()
 
     if chat_lock:
         if interacted_with == "hornet":
             hornet_dialouge()
-
-    if attacked and attack_time >= 1: # when the player attacked and the time they attacked for is greater or equal to 1
-        slash.draw() # draw the attack slash
-        if attack_time == 10: # when the current_level is "tutorial" and the time they attacked for is 10
-        # redraw the entire screen without the attack slash
-            level_draw()
+    
 
 def level_draw():
     screen.clear()
@@ -503,6 +496,7 @@ def gruz_mother_animation():
             gruz_mother.image = f"gruzmother/flying/4{gruz_direction}"
         elif gruz_mother_frames > 40:
             gruz_mother_frames = 1
+            gruz_animation_loops += 1
     elif gruz_mother_phase == "fall":
         if gruz_mother_frames > 0 and gruz_mother_frames <= 10:
             gruz_mother.image = f"gruzmother/dead/1"
@@ -532,7 +526,7 @@ def gruz_mother_animation():
         
 
 def gruz_mother_fight():
-    global gruz_mother_phase, gruz_direction, gruz_health, gruz_phase_time, gruz_x, gruz_y, gruz_one_hit, enemies
+    global gruz_mother_phase, gruz_direction, gruz_health, gruz_x, gruz_y, gruz_one_hit, enemies, gruz_animation_loops
     
     if gruz_mother_phase == "fall" and not(gruz_mother.colliderect(floor)):
         gruz_mother.y += MAX_GRAVITY
@@ -548,28 +542,34 @@ def gruz_mother_fight():
         gruz_mother_phase = "dying"
         enemies.remove(gruz_mother)
     
-    if gruz_mother_phase == "flying" and gruz_phase_time == 50:
+    if gruz_mother_phase == "flying" and gruz_animation_loops >= 7:
         num = randint(1, 3)
+        gruz_animation_loops = 0
         if num == 1:
             gruz_mother_phase = "charge"
+            gruz_x = 0
+            gruz_y = 0
         elif num > 1:
             gruz_mother_phase = "slam"
-    
-    if gruz_mother.midright[0] >= 1280:
-        gruz_direction = "l"
-        gruz_x = -4
-        
-    elif gruz_mother.midleft[0] <= 0:
-        gruz_direction = "r"
-        gruz_x = 4
-        
-    if gruz_mother.midtop[1] <= 0:
-        gruz_y = 1
-    elif gruz_mother.midbottom[1] >= floor.midtop[1]:
-        gruz_y = -1
-        
+            gruz_x = 0
+            gruz_y = 0
     
     if gruz_mother_phase == "flying":
+        if gruz_mother.midright[0] >= 1280:
+            gruz_direction = "l"
+            gruz_x = -4
+            
+        elif gruz_mother.midleft[0] <= 0:
+            gruz_direction = "r"
+            gruz_x = 4
+            
+        if gruz_mother.midtop[1] <= 0:
+            gruz_y = 1
+        elif gruz_mother.midbottom[1] >= floor.midtop[1]:
+            gruz_y = -1
+        
+    
+    if not(gruz_health < 0) and not(gruz_mother_phase == "sleeping") and not(gruz_mother_phase == "wakeup"):
         gruz_mother.x += gruz_x
         gruz_mother.y += gruz_y
     
@@ -615,11 +615,11 @@ def hornet_animation():
 # event handler function to update the game
 # continuously runs
 def update():
-    global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_time, attack_cooldown, cooldown_time, current_level, level_changed # global variables
-    global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key, bossfight_door, gruz_mother, hit_cooldown, chat_lock
+    global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_cooldown, cooldown_time, current_level, level_changed # global variables
+    global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key, bossfight_door, gruz_mother, hit_cooldown, chat_lock, slash
     global hit_cooldown_time, floor2, floor, gruz_mother_phase, gruz_phase_time, gruz_health
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
-
+    print (attack_frame)
     gruz_mother_animation()
 
     hornet_animation()
@@ -632,7 +632,7 @@ def update():
             gruz_mother.y -= 100
     
     for i in enemies:
-        if knight.colliderect(i) and not(hit_cooldown):
+        if knight.colliderect(i) and not(hit_cooldown) and not(gruz_mother_phase == "sleeping"):
             hit(i)
 
     if knight.colliderect(hornet) or knight.colliderect(scene1_door) or knight.colliderect(tutorial_door) or knight.colliderect(bossfight_door):
@@ -695,11 +695,9 @@ def update():
 
     # when the user attacks
     if attacked:
-        attack_time += 1 # timer for the time the player has been attacking for
         attack_animation() # calls the attack_animation function to animate the player while attacking
-        if attack_time >= 5: # once the attack time counter is greater or equal to 5
-            attack_time = 0 # the timer is reset to 0
-            attacked = False # the player will not be "attacking"
+        if attack_frame == 10:
+            slash.pos = (-50, -50)
             attack_cooldown = True # puts the player attacking on cooldown
 
     # if the jump time is greater than one, then that means the player jumped and is in the air
