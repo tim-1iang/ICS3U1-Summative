@@ -310,7 +310,7 @@ def on_key_down(key):
                 jumped = True # change jumped to True meaning the user has jumped
                 jump() # call the jump function
 
-        # F key for putting the window in fullscreen
+        # F key to interact with npcs and doors
         if key == keys.F:
             if knight.colliderect(tutorial_door):
                 level_changed = True
@@ -727,8 +727,12 @@ def gruz_mother_fight():
 
 # function for hornet's animation
 def hornet_animation():
-    global hornet, hornet_animation_frames
+    global hornet, hornet_animation_frames # global variables
     hornet_animation_frames += 1
+    # hornet's image direction will change depending on if the players x is greater or smaller
+    # when chat_lock is True meaning the player is in dialouge and the current line is less than 2
+    # change hornet's image to the attack animation
+    # otherwise change it back to the idle animation
     if knight.x >= hornet.x:
         if chat_lock and current_line < 2:
             if hornet_animation_frames > 0 and hornet_animation_frames <= 10:
@@ -770,12 +774,16 @@ def update():
     global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key, bossfight_door, gruz_mother, hit_cooldown, chat_lock, slash
     global hit_cooldown_time, floor2, floor, gruz_mother_phase, gruz_phase_time, gruz_health, music_changed
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
-    gruz_mother_animation()
-
-    hornet_animation()
-
-    gruz_mother_fight()
     
+    gruz_mother_animation() # call the gruz_mother_animation function to continuously animate gruz mother
+
+    hornet_animation() # call the hornet animation to continuously animate hornet
+
+    gruz_mother_fight() # call the gruz_mother_fight function to keep on updating 
+    
+    # background music
+    # the music changes depending on the current level and if music_changed is set to True
+    # once the music is changed, music_changed is set back to False so the music won't rerun
     if music_changed:
         if current_level == "birth":
             music.play("tutorialmp")
@@ -785,22 +793,26 @@ def update():
             music.play("hornetmp")
             music_changed = False
         music.set_volume=(0.5)
-            
+    
+    # looping through all the enemies
     for i in enemies:
+        # if the enemy is the gruz mother and the slash touches while gruz_mother is sleeping then change the gruz_mother phase to wakeup
+        # gruz_mother's y will also be changed and music_changed will be set to True to change the music
         if i == gruz_mother and slash.colliderect(i) and gruz_mother_phase == "sleeping":
             gruz_mother_phase = "wakeup"
             gruz_mother.y -= 50
             music_changed = True
-
-    for i in enemies:
+        # if gruz_mother is not sleeping and the knight does not have a hit cooldown then the hit function is called which will decrease the player by one health
         if knight.colliderect(i) and not(hit_cooldown) and not(gruz_mother_phase == "sleeping"):
             hit(i)
-
+    
+    # if the knight goes within the doors or the npcs range then the interact key actor will appear above the knight
     if knight.colliderect(hornet) or knight.colliderect(scene1_door) or knight.colliderect(tutorial_door) or knight.colliderect(bossfight_door):
         interact_key.pos = (knight.x, knight.y - 80)
-    else:
+    else: # otherwise the interact key will move off the screen
         interact_key.pos = (-50, -50)
-
+    
+    # when the level is birth the player will fall until they touch the bottom of the screen which will change the level to tutorial
     if current_level == "birth":
         if knight.y > 720:
             current_level = "tutorial"
@@ -810,6 +822,10 @@ def update():
             hornet.pos = (400, 637)
             knight.pos = (540, 0)
 
+    # whenever the player enters a door, the level will be changed which sets level_changed to True
+    # when level changed is True then the value of current_level will change and all the actors positions will change
+    # some will be off the screen and some will be on
+    # the actors are moved off the screen because the actors can still collide with each other even if they arent drawn
     if level_changed:
         if current_level == "scene1":
             floor.pos = (0, 720)
@@ -882,6 +898,9 @@ def update():
         # the direction is changed corresponding to the direction they are facing
         # the running_animation function is called to animate the player running
         # the player will move either left or right depending on which direction
+        # when its scene 1, the entire scene will move instead of the character sort of like moving the player camera
+        # this helps make the level longer than the stated screen ratios
+        # once the player is within a certain range then the player moves and the scene does not so that the player is able to touch the borders
         if keyboard.left:
             if current_level == "scene1":
                 if knight.x <= 300 and scene1_bg1.x != 0:
@@ -901,7 +920,7 @@ def update():
                 direction = "left"
                 running_animation()
                 knight.x -= MAX_MOVEMENT
-
+        # change all the values when the player is moving right
         if keyboard.right:
             if current_level == "scene1":
                 if knight.x >= 1280 - 300 and scene1_bg2.x != 0:
@@ -950,12 +969,6 @@ def update():
         knight.x = left_border + 1
     elif knight.x >= right_border:
         knight.x = right_border - 1
-
-
-
-
-
-
 
 
 pgzrun.go() # run pygame zero
