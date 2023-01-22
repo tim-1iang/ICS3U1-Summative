@@ -49,7 +49,7 @@ gruz_animation_loops = 0
 gruz_one_hit = False
 
 
-MAX_MOVEMENT = 6 # The maximum speed the player can move horizontally
+MAX_MOVEMENT = 16 # The maximum speed the player can move horizontally
 MAX_GRAVITY = 9.8 # The maximum speed the player will fall at
 MAX_JUMP = 20 # The maximum speed the player can jump at
 HEIGHT_LIMIT = 250 # the height which the player cannot jump past
@@ -68,7 +68,7 @@ gruz_health = GRUZ_MOTHER_MAX_HEALTH
 hornet = Actor("hornet/idle/hornet_idle_r", pos=(-50, -50), anchor=("center", "bottom"))
 slash = Actor("attack/attack_slash_r", pos=(-50, -50)) # the actor for the attack slash
 knight = Actor("idle/idle_r1", anchor=("center", "bottom"), pos=(640, 0)) # the player actor, the player anchor is like the point which moves when the player is moved
-gruz_mother = Actor("gruzmother/sleeping/1", pos=(-200, -200), anchor=("center", "center"))
+gruz_mother = Actor("gruzmother/sleeping/1", pos=(-200, -200), anchor=("center", "bottom"))
 enemies = [gruz_mother]
 
 # Background
@@ -446,7 +446,7 @@ def landing_animation(bad_landing):
             knight.image = f"jumping/landing_{temp}3"
 
 def gruz_mother_animation():
-    global gruz_mother_frames, gruz_mother, gruz_mother_phase, gruz_direction, gruz_animation_loops
+    global gruz_mother_frames, gruz_mother, gruz_mother_phase, gruz_direction, gruz_animation_loops, gruz_health
     gruz_mother_frames += 1
     if gruz_mother_phase == "sleeping":
         if gruz_mother_frames > 0 and gruz_mother_frames <= 10:
@@ -485,8 +485,10 @@ def gruz_mother_animation():
             gruz_mother_frames = 1
         elif gruz_mother_frames > 40 and gruz_mother_phase == "dying":
             if gruz_animation_loops >= 3:
-                gruz_mother_phase = "dead"
+                gruz_mother_phase = "fall"
                 gruz_animation_loops = 0
+                gruz_health = -1
+                print ("yes")
             else:
                 gruz_animation_loops += 1
             gruz_mother_frames = 1
@@ -501,19 +503,50 @@ def gruz_mother_animation():
             gruz_mother.image = f"gruzmother/flying/4{gruz_direction}"
         elif gruz_mother_frames > 40:
             gruz_mother_frames = 1
+    elif gruz_mother_phase == "fall":
+        if gruz_mother_frames > 0 and gruz_mother_frames <= 10:
+            gruz_mother.image = f"gruzmother/dead/1"
+        elif gruz_mother_frames > 10 and gruz_mother_frames <= 20:
+            gruz_mother.image = f"gruzmother/dead/2"
+        elif gruz_mother.colliderect(floor):
+            gruz_mother_frames = 1
+            gruz_mother_phase = "wiggle"
+    elif gruz_mother_phase == "wiggle":
+        if gruz_mother_frames > 0 and gruz_mother_frames <= 10:
+            gruz_mother.image = f"gruzmother/dead/wiggle/1"
+        elif gruz_mother_frames > 10 and gruz_mother_frames <= 20:
+            gruz_mother.image = f"gruzmother/dead/wiggle/2"
+        elif gruz_mother_frames > 20 and gruz_mother_frames <= 30:
+            gruz_mother.image = f"gruzmother/dead/wiggle/3"
+        elif gruz_mother_frames > 30:
+            gruz_mother_phase = "stop"
+            gruz_mother_frames = 1
+    elif gruz_mother_phase == "stop":
+        if gruz_mother_frames > 0 and gruz_mother_frames <= 10:
+            gruz_mother.image = f"gruzmother/dead/stop/1"
+        elif gruz_mother_frames > 10 and gruz_mother_frames <= 20:
+            gruz_mother.image = f"gruzmother/dead/stop/2"
+        elif gruz_mother_frames > 20 and gruz_mother_frames <= 30:
+            gruz_mother.image = f"gruzmother/dead/stop/3"
+        
         
 
 def gruz_mother_fight():
-    global gruz_mother_phase, gruz_direction, gruz_health, gruz_phase_time, gruz_x, gruz_y, gruz_one_hit
+    global gruz_mother_phase, gruz_direction, gruz_health, gruz_phase_time, gruz_x, gruz_y, gruz_one_hit, enemies
     
-    if slash.colliderect(gruz_mother) and not(gruz_mother_phase == "dead") and not(gruz_one_hit):
+    if gruz_mother_phase == "fall" and not(gruz_mother.colliderect(floor)):
+        gruz_mother.y += MAX_GRAVITY
+    
+    if slash.colliderect(gruz_mother) and gruz_health != -1 and not(gruz_one_hit):
         gruz_one_hit = True
         gruz_health -= 1
+        print ("no")
     elif not(slash.colliderect(gruz_mother)):
         gruz_one_hit = False
     
-    if gruz_health == 0:
+    if gruz_health == 0 and gruz_mother in enemies:
         gruz_mother_phase = "dying"
+        enemies.remove(gruz_mother)
     
     if gruz_mother_phase == "flying" and gruz_phase_time == 50:
         num = randint(1, 3)
@@ -532,7 +565,7 @@ def gruz_mother_fight():
         
     if gruz_mother.midtop[1] <= 0:
         gruz_y = 1
-    elif gruz_mother.midbottom[1] >= 637:
+    elif gruz_mother.midbottom[1] >= floor.midtop[1]:
         gruz_y = -1
         
     
@@ -640,7 +673,7 @@ def update():
             floor2.pos = (-200, -200)
             bossfight_door.pos = (-50, -50)
             knight.pos = (100, 630)
-            gruz_mother.pos = (640, 580)
+            gruz_mother.pos = (640, 637)
             level_changed = False
 
     # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
