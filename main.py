@@ -1,12 +1,7 @@
 
-# while loop to loop menu at the start
-
-
-
 # Importing modules
 import pgzrun
 from pgzhelper import *
-from time import sleep
 from random import randint # used to get a random number from a range
 
 # Declaring the screen sizes
@@ -52,15 +47,13 @@ gruz_to_knight_direction = "l" # the direction which the gruz_mother needs to fa
 gruz_charged = False # if gruz_mother charged (an attack/phase)
 music_changed = True # if the music changed
 open_menu = True
-menu_play = False
 
-
-MAX_MOVEMENT = 20 #8 The maximum speed the player can move horizontally
+MAX_MOVEMENT = 8 # The maximum speed the player can move horizontally
 MAX_GRAVITY = 9.8 # The maximum speed the player will fall at
 MAX_JUMP = 20 # The maximum speed the player can jump at
 HEIGHT_LIMIT = 250 # the height which the player cannot jump past
 ATTACK_COOLDOWN_TIME = 20 # the time it takes before attacking again
-HEALTH_LIMIT = 1 #8 the players health limit
+HEALTH_LIMIT = 8 # the players health limit
 MAX_FOCUS = 5 # the players max focus
 HIT_COOLDOWN_TIME = 100 # the cooldown between every time the player can be hit
 TEXT_BOX_POS = (640, 120) # the position the textbox will be in when drawn
@@ -107,6 +100,7 @@ controls_page = Actor("background/menucontrols", pos=(-2000, -2000), anchor = ("
 controls_page_back = Actor("background/controlsback", pos=(-2000, -2000), anchor = ("center", "top"))
 houses = Actor("background/scene1/houses", pos=(-2000, -2000), anchor=("center", "top"))
 gameoverbg = Actor("background/gameover", pos=(-2000, -2000), anchor=("left", "top"))
+winbg = Actor("background/win", pos=(-2000, -2000), anchor=("left", "top"))
 
 # Dialouge/gametips
 interact_key = Actor("keys/fkey", anchor=("center", "bottom"), pos=(-50, -50))
@@ -127,6 +121,7 @@ tutorial = [tutorial_bg, floor, tutorial_door, hornet, slash, knight, focus_bar,
 scene1 = [scene1_bg1, scene1_bg2, houses, scene1_door, bossfight_door, floor, floor2, slash, knight, focus_bar, interact_key]
 bossfight = [bossfight_bg, floor, focus_bar, interact_key, gruz_mother, slash, knight]
 dead = [gameoverbg]
+win = [winbg]
 
 # Function to draw into the game
 def draw():
@@ -137,7 +132,7 @@ def draw():
     if chat_lock: # when the user is talking to someone (chatlocked)
         if interacted_with == "hornet": # if they are talking to hornet
             hornet_dialouge() # calls the hornet_dialouge function
-    
+
     menu_bg.draw()
     menu_play.draw()
     menu_controls.draw()
@@ -166,10 +161,13 @@ def level_draw():
     elif current_level == "dead":
         for x in dead:
             x.draw()
+    elif current_level == "win":
+        for x in win:
+            x.draw()
 
     # Draws the health_bar and all the health images
     # y is the variable for index and z is the variable for the value
-    if not(current_level == "dead"):
+    if not(current_level == "dead" or current_level == "win"):
         for y, z in enumerate(health_bar):
             z.draw()
 
@@ -199,11 +197,18 @@ def hornet_dialouge():
         textbox.pos = (-100, -100)
         enter_key.pos = (-100, -100)
 
+def game_win():
+    global winbg, music_changed, current_level
+    current_level = "win"
+    winbg.pos = (0, 0)
+    music_changed = True
+
 
 # function for when the player dies/loses
 def game_over():
-    global gameoverbg, current_level, level_changed
+    global gameoverbg, current_level, level_changed, music_changed
     level_changed = True
+    music_changed = True
     current_level = "dead"
     gameoverbg.pos = (0, 0)
 
@@ -293,9 +298,6 @@ def attack():
         slash.pos = (knight.midright[0] + 20, knight.midright[1]) # the position of the attack slash is the same pos of the players midright but to the right by 20 pixels
     attacked = True # set attacked to True meaning the player has attacked which will set off a cooldown
 
-def menu():
-    pass
-
 # event handler function for when a key is pressed down, parameter key is used to take input of which key the user pressed down
 def on_key_down(key):
     global direction, jumped, stunned, current_level, level_changed, textbox, chat_lock, next_line, interacted_with, enter_key, open_menu # global variables
@@ -326,7 +328,7 @@ def on_key_down(key):
             print (gruz_x, "gruz_x", gruz_y, "gruz_y")
             print (gruz_mother.pos, "gruz_pos")
             print (gruz_direction, "gruz_direction")
-            
+
         # checks individual keys
         if not (stunned) and not(chat_lock): # if the player is not stunned, so the player cant move when they are stunned
 
@@ -597,6 +599,8 @@ def gruz_mother_animation():
             gruz_mother.image = f"gruzmother/dead/stop/2"
         elif gruz_mother_frames > 20 and gruz_mother_frames <= 30:
             gruz_mother.image = f"gruzmother/dead/stop/3"
+        elif gruz_mother_frames == 50:
+            game_win()
     # animation for the attack "charge"
     # if the gruz_animation_loops is 1 then it will do the final animation for charging and change the phase back to "flying"
     elif gruz_mother_phase == "charge":
@@ -833,11 +837,11 @@ def update():
     global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key, bossfight_door, gruz_mother, hit_cooldown, chat_lock, slash
     global hit_cooldown_time, floor2, floor, gruz_mother_phase, gruz_phase_time, gruz_health, music_changed, houses
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
-    
+
     menu()
     
     if not(open_menu):
-        
+
         gruz_mother_animation() # call the gruz_mother_animation function to continuously animate gruz mother
 
         hornet_animation() # call the hornet animation to continuously animate hornet
@@ -858,6 +862,10 @@ def update():
             elif current_level == "dead":
                 music.stop()
                 music.play("deadmp")
+                music_changed = False
+            elif current_level == "win":
+                music.stop()
+                music.play("winmp")
                 music_changed = False
             music.set_volume=(0.5)
 
