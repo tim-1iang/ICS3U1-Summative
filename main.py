@@ -1,7 +1,12 @@
 
+# while loop to loop menu at the start
+
+
+
 # Importing modules
 import pgzrun
 from pgzhelper import *
+from time import sleep
 from random import randint # used to get a random number from a range
 
 # Declaring the screen sizes
@@ -39,13 +44,15 @@ next_line = False # changing to the next line of the dialouge
 current_line = -1 # the current dialouge line
 interacted_with = "" # which npc the player interacts with
 gruz_direction = "l" # the direction the gruz_mother is facing
-gruz_x = -4 # the x value the gruz_mother moves in 
-gruz_y = -3 # the y value the gruz_mother moves in 
+gruz_x = -4 # the x value the gruz_mother moves in
+gruz_y = -3 # the y value the gruz_mother moves in
 gruz_animation_loops = 0 # the looping of the gruz_mother animation
 gruz_one_hit = False # condition to prevent gruz_mother from being hit multiple times in one attack
 gruz_to_knight_direction = "l" # the direction which the gruz_mother needs to face to see the player
 gruz_charged = False # if gruz_mother charged (an attack/phase)
 music_changed = True # if the music changed
+open_menu = True
+menu_play = False
 
 
 MAX_MOVEMENT = 8 # The maximum speed the player can move horizontally
@@ -75,7 +82,7 @@ focus_bar = Actor("inventory/focus_bar1", pos=(30, 30), anchor=("left", "top")) 
 health_bar = [] # the list for all the health actors
 
 # Loop to create healthimages/hearts and add them to the health bar list
-for i in range(0, HEALTH_LIMIT): 
+for i in range(0, HEALTH_LIMIT):
     health = Actor("inventory/health", pos=(125 + (i * 45), 85), anchor=("left", "top")) # creating a actor for health and changing the position depending on which health it is
     health_bar.append(health) # add health to the healthbar list
 
@@ -86,12 +93,19 @@ floor = Actor("background/floor", pos=(-200, -200), anchor=("left", "bottom"))
 floor2 = Actor("background/floor", pos=(-200, -200), anchor=("left", "bottom"))
 tutorial_bg = Actor("background/tutorial/mainbg", pos=(640, 360))
 scene1_bg1 = Actor("background/scene1/mainbg", pos=(0, 0), anchor=("left", "top"))
-scene1_bg2 = Actor("background/scene1/bg_2", pos=(1200, 0), anchor=("left", "top"))
+scene1_bg2 = Actor("background/scene1/bg_2", pos=(1280, 0), anchor=("left", "top"))
 bossfight_bg = Actor("background/bossfight/mainbg", anchor=("left", "top"), pos=(0, 0))
 tutorial_overlay1 = Actor("background/tutorial/overlay1", pos=(0, 740), anchor=("left", "bottom"))
 scene1_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
 bossfight_door = Actor("background/door", pos=(-50, -50), anchor=("middle", "bottom"))
 textbox = Actor("textboxes/textbox", pos=(-100, -100), anchor=("middle", "middle"))
+menu_bg = Actor("background/menu_1", pos=(-2000, -2000), anchor=("left", "top"))
+menu_play = Actor("background/play", pos=(-2000, -2000), anchor = ("center", "top"))
+menu_controls = Actor("background/controls", pos=(-2000, -2000), anchor = ("center", "top"))
+menu_exit = Actor("background/exit", pos=(-2000, -2000), anchor = ("center", "top"))
+controls_page = Actor("background/menucontrols", pos=(-2000, -2000), anchor = ("left", "top"))
+controls_page_back = Actor("background/controlsback", pos=(-2000, -2000), anchor = ("center", "top"))
+houses = Actor("background/scene1/houses", pos=(-2000, -2000), anchor=("center", "top"))
 
 # Dialouge/gametips
 interact_key = Actor("keys/fkey", anchor=("center", "bottom"), pos=(-50, -50))
@@ -107,11 +121,10 @@ dialouge = ["HOW DARE YOU BREAK IN TO HALLOWNEST!",
 
 # All the images/backgrounds/actors which need to be in each level
 # the actors and backgrounds are drawn in the order from left to right
-birth = [birth_bg, slash, knight, focus_bar] 
+birth = [birth_bg, slash, knight, focus_bar]
 tutorial = [tutorial_bg, floor, tutorial_door, hornet, slash, knight, focus_bar, interact_key]
-scene1 = [scene1_bg1, scene1_bg2, scene1_door, bossfight_door, floor, floor2, slash, knight, focus_bar, interact_key]
+scene1 = [scene1_bg1, scene1_bg2, houses, scene1_door, bossfight_door, floor, floor2, slash, knight, focus_bar, interact_key]
 bossfight = [bossfight_bg, floor, focus_bar, interact_key, gruz_mother, slash, knight]
-
 
 # Function to draw into the game
 def draw():
@@ -122,12 +135,18 @@ def draw():
     if chat_lock: # when the user is talking to someone (chatlocked)
         if interacted_with == "hornet": # if they are talking to hornet
             hornet_dialouge() # calls the hornet_dialouge function
+    
+    menu_bg.draw()
+    menu_play.draw()
+    menu_controls.draw()
+    menu_exit.draw()
+    controls_page.draw()
+    controls_page_back.draw()
 
-
-# Function to draw each level 
+# Function to draw each level
 def level_draw():
     screen.clear() # clear the screen
-    
+
     # all the images in the level are drawn depending on what the current level is
     # uses a for loop to loop through everything in the level list
     if current_level == "birth":
@@ -142,13 +161,13 @@ def level_draw():
     elif current_level == "bossfight":
         for x in bossfight:
             x.draw()
-            
+
     # Draws the health_bar and all the health images
     # y is the variable for index and z is the variable for the value
     for y, z in enumerate(health_bar):
         z.draw()
-        
-    # draw the textbox and the enter key 
+
+    # draw the textbox and the enter key
     textbox.draw()
     enter_key.draw()
 
@@ -157,7 +176,7 @@ def level_draw():
 def hornet_dialouge():
     global next_line, current_line, chat_lock, textbox, enter_key # global variables
     # if the current dialouge line is not the last line
-    # then draw the current line 
+    # then draw the current line
     # if next_line is False, this means the enter key is pressed
     # change next_line to True and change to the next dialouge line
     if not(current_line == len(dialouge)):
@@ -265,71 +284,76 @@ def attack():
         slash.pos = (knight.midright[0] + 20, knight.midright[1]) # the position of the attack slash is the same pos of the players midright but to the right by 20 pixels
     attacked = True # set attacked to True meaning the player has attacked which will set off a cooldown
 
+def menu():
+    pass
 
 # event handler function for when a key is pressed down, parameter key is used to take input of which key the user pressed down
 def on_key_down(key):
-    global direction, jumped, stunned, current_level, level_changed, textbox, chat_lock, next_line, interacted_with, enter_key # global variables
-
-    if next_line: # when the enter key is pressed and the player is in a dialouge, skip to the next line in the dialouge
-        if key == keys.RETURN:
-            next_line = False
-    
-    if key == keys.U: # used to debug 
-        print (knight.pos, "knight.pos")
-        print (touched_ground, "touched_ground")
-        print (jumped, "jumped")
-        print (attacked, "attacked")
-        print (current_level, "current_level")
-        print (gruz_mother_phase, "gruz_mother_phase")
-        print (gruz_health, "gruz_health")
-        print (gruz_animation_loops, "gruz_animation_loops")
-        print (gruz_x, "gruz_x", gruz_y, "gruz_y")
-        print (gruz_mother.pos, "gruz_pos")
-        print (gruz_direction, "gruz_direction")
+    global direction, jumped, stunned, current_level, level_changed, textbox, chat_lock, next_line, interacted_with, enter_key, open_menu # global variables
 
     if key == keys.L: # full screen the game by clicking L
         screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 
-    # Escape key to exit the game
+    # Escape key to open menu
     if key == keys.ESCAPE:
-        exit()
+        if open_menu:
+            open_menu = False
+        else:
+            open_menu = True
+    if not(open_menu):
+        if next_line: # when the enter key is pressed and the player is in a dialouge, skip to the next line in the dialouge
+            if key == keys.RETURN:
+                next_line = False
 
-    # checks individual keys
-    if not (stunned) and not(chat_lock): # if the player is not stunned, so the player cant move when they are stunned
+        if key == keys.U: # used to debug
+            print (knight.pos, "knight.pos")
+            print (touched_ground, "touched_ground")
+            print (jumped, "jumped")
+            print (attacked, "attacked")
+            print (current_level, "current_level")
+            print (gruz_mother_phase, "gruz_mother_phase")
+            print (gruz_health, "gruz_health")
+            print (gruz_animation_loops, "gruz_animation_loops")
+            print (gruz_x, "gruz_x", gruz_y, "gruz_y")
+            print (gruz_mother.pos, "gruz_pos")
+            print (gruz_direction, "gruz_direction")
+            
+        # checks individual keys
+        if not (stunned) and not(chat_lock): # if the player is not stunned, so the player cant move when they are stunned
 
-        # left and right keys which changes the direction variable
-        if key == keys.LEFT:
-            direction = "left"
+            # left and right keys which changes the direction variable
+            if key == keys.LEFT:
+                direction = "left"
 
-        if key == keys.RIGHT:
-            direction = "right"
+            if key == keys.RIGHT:
+                direction = "right"
 
-        # Z key for jumping
-        if key == keys.Z:
-            if touched_ground: # checks if the user has touched the ground before jumping
-                jumped = True # change jumped to True meaning the user has jumped
-                jump() # call the jump function
+            # Z key for jumping
+            if key == keys.Z:
+                if touched_ground: # checks if the user has touched the ground before jumping
+                    jumped = True # change jumped to True meaning the user has jumped
+                    jump() # call the jump function
 
-        # F key to interact with npcs and doors
-        if key == keys.F:
-            if knight.colliderect(tutorial_door):
-                level_changed = True
-                current_level = "scene1"
-            elif knight.colliderect(hornet):
-                interacted_with = "hornet"
-                textbox.pos = TEXT_BOX_POS
-                enter_key.pos = (970, 200)
-                chat_lock = True
-            elif knight.colliderect(scene1_door):
-                level_changed = True
-                current_level = "tutorial"
-            elif knight.colliderect(bossfight_door):
-                level_changed = True
-                current_level = "bossfight"
+            # F key to interact with npcs and doors
+            if key == keys.F:
+                if knight.colliderect(tutorial_door):
+                    level_changed = True
+                    current_level = "scene1"
+                elif knight.colliderect(hornet):
+                    interacted_with = "hornet"
+                    textbox.pos = TEXT_BOX_POS
+                    enter_key.pos = (970, 200)
+                    chat_lock = True
+                elif knight.colliderect(scene1_door):
+                    level_changed = True
+                    current_level = "tutorial"
+                elif knight.colliderect(bossfight_door):
+                    level_changed = True
+                    current_level = "bossfight"
 
-        # X key to attack only if attacking is not on cooldown
-        if key == keys.X and not(attack_cooldown):
-            attack()
+            # X key to attack only if attacking is not on cooldown
+            if key == keys.X and not(attack_cooldown):
+                attack()
 
 
 # function for the jumping animation
@@ -532,7 +556,7 @@ def gruz_mother_animation():
         elif gruz_mother_frames > 40:
             gruz_mother_frames = 1
             gruz_animation_loops += 1
-    
+
     # animation for the gruz_mother falling after dying
     # will have the fall animation until it touches the ground
     # once it touches the ground the phase changes to "wiggle"
@@ -597,16 +621,16 @@ def gruz_mother_animation():
         # every slam is one animation loop
         # if the animation loop is even then the gruz_mother will slam upwards
         if gruz_animation_loops % 2 == 0:
-            
+
             # check if the gruz_mother is close to the ceiling and changing the image if it is
             if gruz_mother.midtop[1] <= 50 and gruz_mother.midtop[1] >= 0:
                 gruz_mother.image = f"gruzmother/slam/up_{gruz_direction}"
             else:
                 gruz_mother.image = f"gruzmother/slam/recover_{gruz_direction}"
-       
+
         # otherwise if the animation loop is odd then the gruz_mother will slam downwards
         elif gruz_animation_loops % 2 == 1:
-    
+
             # check if the gruz_mother is close to the floor and changing the image if it is
             if gruz_mother.midbottom[1] >= floor.midtop[1] - 50 and gruz_mother.midbottom[1] <= floor.midtop[1]:
                 gruz_mother.image = f"gruzmother/slam/down_{gruz_direction}"
@@ -615,7 +639,7 @@ def gruz_mother_animation():
         # when the gruz_mother touches either the ceiling or the floor then one will be added to the animation loop
         if gruz_mother.midtop[1] <= 0 or gruz_mother.midbottom[1] >= floor.midtop[1]:
             gruz_animation_loops += 1
-        
+
         # once the animation loop reaches 12
         # the frames and loops will be resetted and the phase will be "flying"
         if gruz_animation_loops == 12:
@@ -641,7 +665,7 @@ def gruz_mother_fight():
             gruz_y = 15
         elif gruz_animation_loops % 2 == 1:
             gruz_y = -15
-        
+
         # change the x increment values depending on which direction the gruz mother is going
         if gruz_direction == "l":
             gruz_x = -7
@@ -651,7 +675,7 @@ def gruz_mother_fight():
     # if the phase is fall and gruz mother is not touching the floor then set the y increment to MAX_GRAVITY
     if gruz_mother_phase == "fall" and not(gruz_mother.colliderect(floor)):
         gruz_mother.y += MAX_GRAVITY
-    
+
     # Prevent gruz mother from losing more than 1 health from one attack
     # the slash can be colliding with gruz mother for multiple frames before the slash is removed from the screen meaning the health would go down by more than 1
     if slash.colliderect(gruz_mother) and gruz_health != -1 and not(gruz_one_hit):
@@ -659,12 +683,12 @@ def gruz_mother_fight():
         gruz_health -= 1
     elif not(slash.colliderect(gruz_mother)):
         gruz_one_hit = False
-    
+
     # if gruz mother's health is 0 and is in the enemies list then change the phase to dying and remove gruz mother from the enemies list
     if gruz_health == 0 and gruz_mother in enemies:
         gruz_mother_phase = "dying"
         enemies.remove(gruz_mother)
-    
+
     # if gruz mothers phase is flying and its been more than 10 loops
     # generate a random number, if its 1 then change the phase to charge otherwise if its 2 or 3 then change the phase to slam
     # the gruz mother will have a 66 percent chance to slam and 33 percent chance to charge
@@ -680,7 +704,7 @@ def gruz_mother_fight():
             gruz_mother_phase = "slam"
             gruz_x = 0
             gruz_y = 0
-    
+
     # when the phase is flying
     # and gruz mother touches the floor, ceiling, or walls then change the direction and the movement values to the opposite
     if gruz_mother_phase == "flying":
@@ -697,7 +721,7 @@ def gruz_mother_fight():
         elif gruz_mother.midbottom[1] >= floor.midtop[1]:
             gruz_y = -3
 
-    
+
     # when the phase is charge, set the gruz x and y values once
     # x is fixed movespeed while y can vary, the y value changes depending on how far up or down the gruz mother is from the knight
     # gruz_charged starts at False and changes once the x and y values are set
@@ -718,7 +742,7 @@ def gruz_mother_fight():
                 gruz_charged = True
         elif gruz_animation_loops == 1:
             gruz_charged = False
-    
+
     # when the gruz is not dead, is not sleeping and not in the wakeup animation, then it will move horizontally by gruz_x and vertically by gruz_y
     if not(gruz_health < 0) and not(gruz_mother_phase == "sleeping") and not(gruz_mother_phase == "wakeup"):
         gruz_mother.x += gruz_x
@@ -765,210 +789,244 @@ def hornet_animation():
                 hornet_animation_frames = 1
         else:
             hornet.image = "hornet/idle/hornet_idle_l"
-            
+
+def on_mouse_down(pos, button):
+    global menu_bg, menu_play, menu_controls, menu_exit, open_menu, controls_page, controls_page_back, menu_play, menu_controls, menu_exit
+    if menu_play.collidepoint(pos):
+        open_menu = False
+    elif menu_controls.collidepoint(pos):
+        controls_page.pos = (0, 0)
+        controls_page_back.pos = (91, 56)
+    elif controls_page_back.collidepoint(pos):
+        controls_page.pos = (-2000, -2000)
+        controls_page_back.pos = (-2000, -2000)
+    elif menu_exit.collidepoint(pos):
+        exit()
+
+def menu():
+    global menu_play, menu_bg, menu_play, menu_controls, menu_exit
+    if open_menu:
+        menu_bg.pos = (0, 0)
+        menu_play.pos = (640, 235)
+        menu_controls.pos = (640, 366)
+        menu_exit.pos = (640, 502)
+    else:
+        menu_bg.pos = (-2000, -2000)
+        menu_play.pos = (-2000, -2000)
+        menu_controls.pos = (-2000, -2000)
+        menu_exit.pos = (-2000, -2000)
+
 
 # event handler function to update the game
 # continuously runs
 def update():
     global direction, falling_time, stunned, stunned_wait_time, jump_time, touched_ground, jumped, attacked, attack_cooldown, cooldown_time, current_level, level_changed # global variables
     global left_border, right_border, scene1_bg1, scene1_bg2, scene1_door, tutorial_door, hornet, interact_key, bossfight_door, gruz_mother, hit_cooldown, chat_lock, slash
-    global hit_cooldown_time, floor2, floor, gruz_mother_phase, gruz_phase_time, gruz_health, music_changed
+    global hit_cooldown_time, floor2, floor, gruz_mother_phase, gruz_phase_time, gruz_health, music_changed, houses
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
     
-    gruz_mother_animation() # call the gruz_mother_animation function to continuously animate gruz mother
-
-    hornet_animation() # call the hornet animation to continuously animate hornet
-
-    gruz_mother_fight() # call the gruz_mother_fight function to keep on updating 
+    menu()
     
-    # background music
-    # the music changes depending on the current level and if music_changed is set to True
-    # once the music is changed, music_changed is set back to False so the music won't rerun
-    if music_changed:
+    if not(open_menu):
+        
+        gruz_mother_animation() # call the gruz_mother_animation function to continuously animate gruz mother
+
+        hornet_animation() # call the hornet animation to continuously animate hornet
+
+        gruz_mother_fight() # call the gruz_mother_fight function to keep on updating
+
+        # background music
+        # the music changes depending on the current level and if music_changed is set to True
+        # once the music is changed, music_changed is set back to False so the music won't rerun
+        if music_changed:
+            if current_level == "birth":
+                music.play("tutorialmp")
+                music_changed = False
+            elif current_level == "bossfight":
+                music.stop()
+                music.play("hornetmp")
+                music_changed = False
+            music.set_volume=(0.5)
+
+        # looping through all the enemies
+        for i in enemies:
+            # if the enemy is the gruz mother and the slash touches while gruz_mother is sleeping then change the gruz_mother phase to wakeup
+            # gruz_mother's y will also be changed and music_changed will be set to True to change the music
+            if i == gruz_mother and slash.colliderect(i) and gruz_mother_phase == "sleeping":
+                gruz_mother_phase = "wakeup"
+                gruz_mother.y -= 50
+                music_changed = True
+            # if gruz_mother is not sleeping and the knight does not have a hit cooldown then the hit function is called which will decrease the player by one health
+            if knight.colliderect(i) and not(hit_cooldown) and not(gruz_mother_phase == "sleeping"):
+                hit(i)
+
+        # if the knight goes within the doors or the npcs range then the interact key actor will appear above the knight
+        if knight.colliderect(hornet) or knight.colliderect(scene1_door) or knight.colliderect(tutorial_door) or knight.colliderect(bossfight_door):
+            interact_key.pos = (knight.x, knight.y - 80)
+        else: # otherwise the interact key will move off the screen
+            interact_key.pos = (-50, -50)
+
+        # when the level is birth the player will fall until they touch the bottom of the screen which will change the level to tutorial
         if current_level == "birth":
-            music.play("tutorialmp")
-            music_changed = False
-        elif current_level == "bossfight":
-            music.stop()
-            music.play("hornetmp")
-            music_changed = False
-        music.set_volume=(0.5)
-    
-    # looping through all the enemies
-    for i in enemies:
-        # if the enemy is the gruz mother and the slash touches while gruz_mother is sleeping then change the gruz_mother phase to wakeup
-        # gruz_mother's y will also be changed and music_changed will be set to True to change the music
-        if i == gruz_mother and slash.colliderect(i) and gruz_mother_phase == "sleeping":
-            gruz_mother_phase = "wakeup"
-            gruz_mother.y -= 50
-            music_changed = True
-        # if gruz_mother is not sleeping and the knight does not have a hit cooldown then the hit function is called which will decrease the player by one health
-        if knight.colliderect(i) and not(hit_cooldown) and not(gruz_mother_phase == "sleeping"):
-            hit(i)
-    
-    # if the knight goes within the doors or the npcs range then the interact key actor will appear above the knight
-    if knight.colliderect(hornet) or knight.colliderect(scene1_door) or knight.colliderect(tutorial_door) or knight.colliderect(bossfight_door):
-        interact_key.pos = (knight.x, knight.y - 80)
-    else: # otherwise the interact key will move off the screen
-        interact_key.pos = (-50, -50)
-    
-    # when the level is birth the player will fall until they touch the bottom of the screen which will change the level to tutorial
-    if current_level == "birth":
-        if knight.y > 720:
-            current_level = "tutorial"
-            scene1_door.pos = (-50, -50)
-            tutorial_door.pos = (1200, 637)
-            floor.pos = (0, 720)
-            hornet.pos = (400, 637)
-            knight.pos = (540, 0)
+            if knight.y > 720:
+                current_level = "tutorial"
+                scene1_door.pos = (-50, -50)
+                tutorial_door.pos = (1200, 637)
+                floor.pos = (0, 720)
+                hornet.pos = (400, 637)
+                knight.pos = (540, 0)
 
-    # whenever the player enters a door, the level will be changed which sets level_changed to True
-    # when level changed is True then the value of current_level will change and all the actors positions will change
-    # some will be off the screen and some will be on
-    # the actors are moved off the screen because the actors can still collide with each other even if they arent drawn
-    if level_changed:
-        if current_level == "scene1":
-            floor.pos = (0, 720)
-            floor2.pos = (1280, 720)
-            knight.pos = (100, 630)
-            scene1_door.pos = (50, 637)
-            tutorial_door.pos = (-50, -50)
-            bossfight_door.pos = (2400, 637)
-            hornet.pos = (-50, -50)
-            level_changed = False
-        elif current_level == "tutorial":
-            knight.pos = (1200, 637)
-            scene1_door.pos = (-50, -50)
-            tutorial_door.pos = (1200, 637)
-            bossfight_door.pos = (-50, -50)
-            hornet.pos = (400, 637)
-            floor.pos = (0, 720)
-            floor2.pos = (-200, -200)
-            level_changed = False
-        elif current_level == "bossfight":
-            floor.pos = (0, 720)
-            floor2.pos = (-200, -200)
-            bossfight_door.pos = (-50, -50)
-            knight.pos = (100, 630)
-            gruz_mother.pos = (640, 637)
-            level_changed = False
-
-    # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
-    if not(attacked) and not(jumped) and not(falling_time > 30) and current_level != "birth":
-        idle_animation()
-
-    # when the player attack has a cooldown
-    if attack_cooldown:
-        cooldown_time += 1 # add one to the cooldown timer
-        if cooldown_time >= ATTACK_COOLDOWN_TIME: # if the cooldown timer is equal to or bigger than the set attack cooldown time
-            cooldown_time = 0 # reset the cooldown timer to 0
-            attack_cooldown = False # put attacking off cooldown
-
-    if hit_cooldown:
-        hit_cooldown_time += 1
-        if hit_cooldown_time >= HIT_COOLDOWN_TIME:
-            hit_cooldown_time = 0
-            hit_cooldown = False
-
-    # when the user attacks
-    if attacked:
-        attack_animation() # calls the attack_animation function to animate the player while attacking
-        if attack_frame == 10:
-            slash.pos = (-1000, -1000)
-            attack_cooldown = True # puts the player attacking on cooldown
-
-    # if the jump time is greater than one, then that means the player jumped and is in the air
-    # continuously call the jump function and animation
-    if jump_time >= 1:
-        jump()
-        jump_animation()
-
-    # when the player is stunned
-    if stunned:
-        if abs(time.time()) >= stunned_wait_time + 1: # if one or more seconds passed after the time of the stun
-            stunned = False # the player won't be stunned anymore
-
-    if touched_ground and not(stunned):
-        falling_time = 0
-
-    # Character Movement
-    # if the player is not stunned, to prevent moving when they are stunned
-    if not (stunned) and not(chat_lock):
-        # when the player holds the left or right key
-        # the direction is changed corresponding to the direction they are facing
-        # the running_animation function is called to animate the player running
-        # the player will move either left or right depending on which direction
-        # when its scene 1, the entire scene will move instead of the character sort of like moving the player camera
-        # this helps make the level longer than the stated screen ratios
-        # once the player is within a certain range then the player moves and the scene does not so that the player is able to touch the borders
-        if keyboard.left:
+        # whenever the player enters a door, the level will be changed which sets level_changed to True
+        # when level changed is True then the value of current_level will change and all the actors positions will change
+        # some will be off the screen and some will be on
+        # the actors are moved off the screen because the actors can still collide with each other even if they arent drawn
+        if level_changed:
             if current_level == "scene1":
-                if knight.x <= 300 and scene1_bg1.x != 0:
-                    direction = "left"
-                    running_animation()
-                    bossfight_door.x += MAX_MOVEMENT
-                    scene1_door.x += MAX_MOVEMENT
-                    scene1_bg1.x += MAX_MOVEMENT
-                    scene1_bg2.x += MAX_MOVEMENT
-                    floor.x += MAX_MOVEMENT
-                    floor2.x += MAX_MOVEMENT
+                floor.pos = (0, 720)
+                floor2.pos = (1280, 720)
+                knight.pos = (100, 630)
+                scene1_door.pos = (50, 637)
+                tutorial_door.pos = (-50, -50)
+                bossfight_door.pos = (2400, 637)
+                hornet.pos = (-50, -50)
+                houses.pos = (1280, 0)
+                level_changed = False
+            elif current_level == "tutorial":
+                knight.pos = (1200, 637)
+                scene1_door.pos = (-50, -50)
+                tutorial_door.pos = (1200, 637)
+                bossfight_door.pos = (-50, -50)
+                houses.pos = (-2000, -2000)
+                hornet.pos = (400, 637)
+                floor.pos = (0, 720)
+                floor2.pos = (-200, -200)
+                level_changed = False
+            elif current_level == "bossfight":
+                floor.pos = (0, 720)
+                floor2.pos = (-200, -200)
+                bossfight_door.pos = (-50, -50)
+                houses.pos = (-2000, -2000)
+                knight.pos = (100, 630)
+                gruz_mother.pos = (640, 637)
+                level_changed = False
+
+        # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
+        if not(attacked) and not(jumped) and not(falling_time > 30) and current_level != "birth":
+            idle_animation()
+
+        # when the player attack has a cooldown
+        if attack_cooldown:
+            cooldown_time += 1 # add one to the cooldown timer
+            if cooldown_time >= ATTACK_COOLDOWN_TIME: # if the cooldown timer is equal to or bigger than the set attack cooldown time
+                cooldown_time = 0 # reset the cooldown timer to 0
+                attack_cooldown = False # put attacking off cooldown
+
+        if hit_cooldown:
+            hit_cooldown_time += 1
+            if hit_cooldown_time >= HIT_COOLDOWN_TIME:
+                hit_cooldown_time = 0
+                hit_cooldown = False
+
+        # when the user attacks
+        if attacked:
+            attack_animation() # calls the attack_animation function to animate the player while attacking
+            if attack_frame == 10:
+                slash.pos = (-1000, -1000)
+                attack_cooldown = True # puts the player attacking on cooldown
+
+        # if the jump time is greater than one, then that means the player jumped and is in the air
+        # continuously call the jump function and animation
+        if jump_time >= 1:
+            jump()
+            jump_animation()
+
+        # when the player is stunned
+        if stunned:
+            if abs(time.time()) >= stunned_wait_time + 1: # if one or more seconds passed after the time of the stun
+                stunned = False # the player won't be stunned anymore
+
+        if touched_ground and not(stunned):
+            falling_time = 0
+
+        # Character Movement
+        # if the player is not stunned, to prevent moving when they are stunned
+        if not (stunned) and not(chat_lock):
+            # when the player holds the left or right key
+            # the direction is changed corresponding to the direction they are facing
+            # the running_animation function is called to animate the player running
+            # the player will move either left or right depending on which direction
+            # when its scene 1, the entire scene will move instead of the character sort of like moving the player camera
+            # this helps make the level longer than the stated screen ratios
+            # once the player is within a certain range then the player moves and the scene does not so that the player is able to touch the borders
+            if keyboard.left:
+                if current_level == "scene1":
+                    if knight.x <= 300 and scene1_bg1.x != 0:
+                        direction = "left"
+                        running_animation()
+                        bossfight_door.x += MAX_MOVEMENT
+                        scene1_door.x += MAX_MOVEMENT
+                        scene1_bg1.x += MAX_MOVEMENT
+                        scene1_bg2.x += MAX_MOVEMENT
+                        floor.x += MAX_MOVEMENT
+                        floor2.x += MAX_MOVEMENT
+                        houses.x += MAX_MOVEMENT
+                    else:
+                        direction = "left"
+                        running_animation()
+                        knight.x -= MAX_MOVEMENT
                 else:
                     direction = "left"
                     running_animation()
                     knight.x -= MAX_MOVEMENT
-            else:
-                direction = "left"
-                running_animation()
-                knight.x -= MAX_MOVEMENT
-        # change all the values when the player is moving right
-        if keyboard.right:
-            if current_level == "scene1":
-                if knight.x >= 1280 - 300 and scene1_bg2.x != 0:
-                    direction = "right"
-                    running_animation()
-                    bossfight_door.x -= MAX_MOVEMENT
-                    scene1_door.x -= MAX_MOVEMENT
-                    scene1_bg1.x -= MAX_MOVEMENT
-                    scene1_bg2.x -= MAX_MOVEMENT
-                    floor.x -= MAX_MOVEMENT
-                    floor2.x -= MAX_MOVEMENT
+            # change all the values when the player is moving right
+            if keyboard.right:
+                if current_level == "scene1":
+                    if knight.x >= 1280 - 300 and scene1_bg2.x != 0:
+                        direction = "right"
+                        running_animation()
+                        bossfight_door.x -= MAX_MOVEMENT
+                        scene1_door.x -= MAX_MOVEMENT
+                        scene1_bg1.x -= MAX_MOVEMENT
+                        scene1_bg2.x -= MAX_MOVEMENT
+                        floor.x -= MAX_MOVEMENT
+                        floor2.x -= MAX_MOVEMENT
+                        houses.x -= MAX_MOVEMENT
+                    else:
+                        direction = "right"
+                        running_animation()
+                        knight.x += MAX_MOVEMENT
                 else:
                     direction = "right"
                     running_animation()
                     knight.x += MAX_MOVEMENT
-            else:
-                direction = "right"
-                running_animation()
-                knight.x += MAX_MOVEMENT
 
 
-    # Collision
-    # Gravity / Ground Collision
-    # when the player is not touching/colliding with the floor and not jumping, gravity is applied to the player
-    #   the player will move depending on the return value of the function character_gravity
-    #   the fall_animation function is called to animate the player falling
-    # if the player is touching the floor
-    # touched_ground will be set to True meaning the player has touched the ground
-    # if the falling_time was bigger than 30 then the player will have a "bad landing"
-    # the function landing_animation will have a parameter passed through depending on if it was a bad landing or not
-    # if
-    if not(knight.colliderect(floor)) and not(knight.colliderect(floor2)):
-        if not(jumped):
-            knight.y += character_gravity()
-            fall_animation()
-    elif knight.colliderect(floor) or knight.colliderect(floor2):
-        touched_ground = True
-        if falling_time > 0 and falling_time <= 30:
-            landing_animation(False)
-        elif falling_time > 30:
-            landing_animation(True)
+        # Collision
+        # Gravity / Ground Collision
+        # when the player is not touching/colliding with the floor and not jumping, gravity is applied to the player
+        #   the player will move depending on the return value of the function character_gravity
+        #   the fall_animation function is called to animate the player falling
+        # if the player is touching the floor
+        # touched_ground will be set to True meaning the player has touched the ground
+        # if the falling_time was bigger than 30 then the player will have a "bad landing"
+        # the function landing_animation will have a parameter passed through depending on if it was a bad landing or not
+        # if
+        if not(knight.colliderect(floor)) and not(knight.colliderect(floor2)):
+            if not(jumped):
+                knight.y += character_gravity()
+                fall_animation()
+        elif knight.colliderect(floor) or knight.colliderect(floor2):
+            touched_ground = True
+            if falling_time > 0 and falling_time <= 30:
+                landing_animation(False)
+            elif falling_time > 30:
+                landing_animation(True)
 
 
-    # border collision
-    if knight.x <= left_border:
-        knight.x = left_border + 1
-    elif knight.x >= right_border:
-        knight.x = right_border - 1
-
+        # border collision
+        if knight.x <= left_border:
+            knight.x = left_border + 1
+        elif knight.x >= right_border:
+            knight.x = right_border - 1
 
 pgzrun.go() # run pygame zero
