@@ -55,12 +55,12 @@ open_menu = True
 menu_play = False
 
 
-MAX_MOVEMENT = 8 # The maximum speed the player can move horizontally
+MAX_MOVEMENT = 20 #8 The maximum speed the player can move horizontally
 MAX_GRAVITY = 9.8 # The maximum speed the player will fall at
 MAX_JUMP = 20 # The maximum speed the player can jump at
 HEIGHT_LIMIT = 250 # the height which the player cannot jump past
 ATTACK_COOLDOWN_TIME = 20 # the time it takes before attacking again
-HEALTH_LIMIT = 8 # the players health limit
+HEALTH_LIMIT = 1 #8 the players health limit
 MAX_FOCUS = 5 # the players max focus
 HIT_COOLDOWN_TIME = 100 # the cooldown between every time the player can be hit
 TEXT_BOX_POS = (640, 120) # the position the textbox will be in when drawn
@@ -106,6 +106,7 @@ menu_exit = Actor("background/exit", pos=(-2000, -2000), anchor = ("center", "to
 controls_page = Actor("background/menucontrols", pos=(-2000, -2000), anchor = ("left", "top"))
 controls_page_back = Actor("background/controlsback", pos=(-2000, -2000), anchor = ("center", "top"))
 houses = Actor("background/scene1/houses", pos=(-2000, -2000), anchor=("center", "top"))
+gameoverbg = Actor("background/gameover", pos=(-2000, -2000), anchor=("left", "top"))
 
 # Dialouge/gametips
 interact_key = Actor("keys/fkey", anchor=("center", "bottom"), pos=(-50, -50))
@@ -125,6 +126,7 @@ birth = [birth_bg, slash, knight, focus_bar]
 tutorial = [tutorial_bg, floor, tutorial_door, hornet, slash, knight, focus_bar, interact_key]
 scene1 = [scene1_bg1, scene1_bg2, houses, scene1_door, bossfight_door, floor, floor2, slash, knight, focus_bar, interact_key]
 bossfight = [bossfight_bg, floor, focus_bar, interact_key, gruz_mother, slash, knight]
+dead = [gameoverbg]
 
 # Function to draw into the game
 def draw():
@@ -161,11 +163,15 @@ def level_draw():
     elif current_level == "bossfight":
         for x in bossfight:
             x.draw()
+    elif current_level == "dead":
+        for x in dead:
+            x.draw()
 
     # Draws the health_bar and all the health images
     # y is the variable for index and z is the variable for the value
-    for y, z in enumerate(health_bar):
-        z.draw()
+    if not(current_level == "dead"):
+        for y, z in enumerate(health_bar):
+            z.draw()
 
     # draw the textbox and the enter key
     textbox.draw()
@@ -196,7 +202,10 @@ def hornet_dialouge():
 
 # function for when the player dies/loses
 def game_over():
-    print ("dead")
+    global gameoverbg, current_level, level_changed
+    level_changed = True
+    current_level = "dead"
+    gameoverbg.pos = (0, 0)
 
 # function for when the player gets hit by an enemy
 def hit(enemy):
@@ -846,6 +855,10 @@ def update():
                 music.stop()
                 music.play("hornetmp")
                 music_changed = False
+            elif current_level == "dead":
+                music.stop()
+                music.play("deadmp")
+                music_changed = False
             music.set_volume=(0.5)
 
         # looping through all the enemies
@@ -908,6 +921,11 @@ def update():
                 houses.pos = (-2000, -2000)
                 knight.pos = (100, 630)
                 gruz_mother.pos = (640, 637)
+                level_changed = False
+            elif current_level == "dead":
+                gruz_mother.pos = (-500, -500)
+                gruz_x = 0
+                grux_y = 0
                 level_changed = False
 
         # when the player is not attacking or jumping or falling/landing, the idle animation function is called so the player is set to the idle image
