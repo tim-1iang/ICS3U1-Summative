@@ -46,7 +46,7 @@ gruz_one_hit = False # condition to prevent gruz_mother from being hit multiple 
 gruz_to_knight_direction = "l" # the direction which the gruz_mother needs to face to see the player
 gruz_charged = False # if gruz_mother charged (an attack/phase)
 music_changed = True # if the music changed
-open_menu = True
+open_menu = True # if the menu is open
 
 MAX_MOVEMENT = 8 # The maximum speed the player can move horizontally
 MAX_GRAVITY = 9.8 # The maximum speed the player will fall at
@@ -133,6 +133,7 @@ def draw():
         if interacted_with == "hornet": # if they are talking to hornet
             hornet_dialouge() # calls the hornet_dialouge function
 
+    # draw all the menu items because they always stay on the screen but sometimes just arent shown
     menu_bg.draw()
     menu_play.draw()
     menu_controls.draw()
@@ -165,11 +166,13 @@ def level_draw():
         for x in win:
             x.draw()
 
-    # Draws the health_bar and all the health images
-    # y is the variable for index and z is the variable for the value
+    # Draws the health_bar and all the health images using a while loop
+    # the loop will loop and draw the index until it reaches the last number
     if not(current_level == "dead" or current_level == "win"):
-        for y, z in enumerate(health_bar):
-            z.draw()
+        temp = 0
+        while temp < len(health_bar):
+            health_bar[temp].draw()
+            temp += 1
 
     # draw the textbox and the enter key
     textbox.draw()
@@ -197,8 +200,12 @@ def hornet_dialouge():
         textbox.pos = (-100, -100)
         enter_key.pos = (-100, -100)
 
+
+# function for when you complete the games objective
 def game_win():
-    global winbg, music_changed, current_level
+    global winbg, music_changed, current_level # global variables
+    # this function changes the level draws the win screen
+    # then it also changes the music
     current_level = "win"
     winbg.pos = (0, 0)
     music_changed = True
@@ -206,7 +213,9 @@ def game_win():
 
 # function for when the player dies/loses
 def game_over():
-    global gameoverbg, current_level, level_changed, music_changed
+    global gameoverbg, current_level, level_changed, music_changed # global variables
+    # this function changes the level and draws the dead background
+    # then it also changes the music
     level_changed = True
     music_changed = True
     current_level = "dead"
@@ -306,11 +315,14 @@ def on_key_down(key):
         screen.surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 
     # Escape key to open menu
+    # the escape key can toggle the menu so it can be used to open and close
     if key == keys.ESCAPE:
         if open_menu:
             open_menu = False
         else:
             open_menu = True
+
+    # when the menu is True/running then you can't move your character
     if not(open_menu):
         if next_line: # when the enter key is pressed and the player is in a dialouge, skip to the next line in the dialouge
             if key == keys.RETURN:
@@ -786,6 +798,7 @@ def hornet_animation():
                 hornet_animation_frames = 1
         else:
             hornet.image = "hornet/idle/hornet_idle_r"
+    # the left direction
     elif knight.x < hornet.x:
         if chat_lock and current_line < 2:
             if hornet_animation_frames > 0 and hornet_animation_frames <= 10:
@@ -803,8 +816,14 @@ def hornet_animation():
         else:
             hornet.image = "hornet/idle/hornet_idle_l"
 
+
+# event handler function to check if the mouse is clicked down
 def on_mouse_down(pos, button):
     global menu_bg, menu_play, menu_controls, menu_exit, open_menu, controls_page, controls_page_back, menu_play, menu_controls, menu_exit
+    # if the mouse is clicked down on the menu buttons positions then it would have a response
+    # the play button continues the game and sets open_menu to False so the character can be moved again
+    # clicking on the controls button would move the controls page onto the screen and closing it would move it back off the screen
+    # when the exit button is clicked, the game window closes
     if menu_play.collidepoint(pos):
         open_menu = False
     elif menu_controls.collidepoint(pos):
@@ -816,8 +835,12 @@ def on_mouse_down(pos, button):
     elif menu_exit.collidepoint(pos):
         exit()
 
+
+# function for the game menu
 def menu():
     global menu_play, menu_bg, menu_play, menu_controls, menu_exit
+    # if the menu is open/True then the positions of the button and backgrounds are displayed on the screen
+    # otherwise they are moved off the screen but are still drawn
     if open_menu:
         menu_bg.pos = (0, 0)
         menu_play.pos = (640, 235)
@@ -838,9 +861,9 @@ def update():
     global hit_cooldown_time, floor2, floor, gruz_mother_phase, gruz_phase_time, gruz_health, music_changed, houses
     global MAX_MOVEMENT, ATTACK_COOLDOWN_TIME # global variables/constants
 
-    menu()
-    
-    if not(open_menu):
+    menu() # continuously update the menu
+
+    if not(open_menu): # if the menu is open then everything in the update will not run to prevent something happening in the background when the user is still in the menu
 
         gruz_mother_animation() # call the gruz_mother_animation function to continuously animate gruz mother
 
